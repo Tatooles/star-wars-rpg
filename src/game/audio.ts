@@ -16,8 +16,6 @@ type BrowserAudioContext = typeof AudioContext;
 export class ProceduralAudio {
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
-  private humGain: GainNode | null = null;
-  private ambienceGain: GainNode | null = null;
 
   async start() {
     if (!this.context) this.createGraph();
@@ -88,26 +86,8 @@ export class ProceduralAudio {
     master.gain.value = 0.5;
     master.connect(context.destination);
 
-    const hum = context.createOscillator();
-    const humGain = context.createGain();
-    hum.type = "sawtooth";
-    hum.frequency.value = 82;
-    humGain.gain.value = 0.018;
-    hum.connect(humGain).connect(master);
-    hum.start();
-
-    const ambience = context.createOscillator();
-    const ambienceGain = context.createGain();
-    ambience.type = "sine";
-    ambience.frequency.value = 41;
-    ambienceGain.gain.value = 0.012;
-    ambience.connect(ambienceGain).connect(master);
-    ambience.start();
-
     this.context = context;
     this.master = master;
-    this.humGain = humGain;
-    this.ambienceGain = ambienceGain;
   }
 
   private tone(startFrequency: number, endFrequency: number, duration: number, type: OscillatorType, volume: number) {
