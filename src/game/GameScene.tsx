@@ -63,6 +63,7 @@ type MissionDirectorProps = {
   controls: RefObject<Controls>;
   playerRef: RefObject<RapierRigidBody | null>;
   enemyBodies: RefObject<Map<string, RapierRigidBody>>;
+  enemyPositions: RefObject<Map<string, THREE.Vector3>>;
   lockedTargetRef: RefObject<RapierRigidBody | null>;
   session: GameSession;
   dispatch: Dispatch<SessionAction>;
@@ -73,6 +74,7 @@ function MissionDirector({
   controls,
   playerRef,
   enemyBodies,
+  enemyPositions,
   lockedTargetRef,
   session,
   dispatch,
@@ -94,6 +96,15 @@ function MissionDirector({
     const player = playerRef.current;
     if (!player) return;
     const playerPosition = player.translation();
+    for (const enemy of session.enemies) {
+      const body = enemyBodies.current.get(enemy.id);
+      if (!enemy.alive || !body) {
+        enemyPositions.current.delete(enemy.id);
+        continue;
+      }
+      const position = body.translation();
+      enemyPositions.current.set(enemy.id, new THREE.Vector3(position.x, position.y, position.z));
+    }
     if (import.meta.env.DEV) {
       document.documentElement.dataset.playerPosition = [
         playerPosition.x.toFixed(2),
@@ -228,6 +239,7 @@ function EncounterGate({ z }: { z: number }) {
 export function GameScene({ playing, session, dispatch, onSound }: GameSceneProps) {
   const playerRef = useRef<RapierRigidBody>(null);
   const enemyBodies = useRef(new Map<string, RapierRigidBody>());
+  const enemyPositions = useRef(new Map<string, THREE.Vector3>());
   const lockedTargetRef = useRef<RapierRigidBody>(null);
   const sceneRef = useRef<THREE.Scene>(null);
   const yawRef = useRef(Math.PI) as MutableRefObject<number>;
@@ -262,22 +274,17 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
   }, []);
 
   const getAssistedEnemyId = useCallback(
-    (range: number) => {
-      const player = playerRef.current;
-      if (!player) return null;
-      const playerPosition = player.translation();
-      const rotation = player.rotation();
+    (range: number, playerPosition: THREE.Vector3, playerRotation: THREE.Quaternion) => {
       const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(
-        new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w),
+        playerRotation,
       );
       const origin = new THREE.Vector3(playerPosition.x, playerPosition.y + 0.65, playerPosition.z);
       const ray = new THREE.Raycaster();
       let nearest: { id: string; score: number } | null = null;
       for (const enemy of session.enemies) {
         if (!enemy.alive || enemy.encounter > session.activeEncounter) continue;
-        const body = enemyBodies.current.get(enemy.id);
-        if (!body) continue;
-        const position = body.translation();
+        const position = enemyPositions.current.get(enemy.id);
+        if (!position) continue;
         const toEnemy = new THREE.Vector3(
           position.x - playerPosition.x,
           0,
@@ -305,13 +312,13 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
           });
         if (obstruction) continue;
 
-        const lockedBonus = body === lockedTargetRef.current ? -range : 0;
+        const lockedBonus = enemy.id === session.lockedTargetId ? -range : 0;
         const score = distance + (1 - facing) * range + lockedBonus;
         if (!nearest || score < nearest.score) nearest = { id: enemy.id, score };
       }
       return nearest?.id ?? null;
     },
-    [session.activeEncounter, session.enemies],
+    [session.activeEncounter, session.enemies, session.lockedTargetId],
   );
 
   const removeProjectile = useCallback((id: number) => {
@@ -501,6 +508,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             controls={controls}
             playerRef={playerRef}
             enemyBodies={enemyBodies}
+            enemyPositions={enemyPositions}
             lockedTargetRef={lockedTargetRef}
             session={session}
             dispatch={dispatchSession}

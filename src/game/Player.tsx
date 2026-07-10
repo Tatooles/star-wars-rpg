@@ -22,7 +22,11 @@ type PlayerProps = {
   invulnerableRef: RefObject<boolean>;
   lockedTargetRef: RefObject<RapierRigidBody | null>;
   controlLockUntilRef: RefObject<number>;
-  getAssistedEnemyId: (range: number) => string | null;
+  getAssistedEnemyId: (
+    range: number,
+    playerPosition: THREE.Vector3,
+    playerRotation: THREE.Quaternion,
+  ) => string | null;
   onEnemyHit: (enemyId: string, damage: number) => void;
   onCombatStateChange: (combat: PlayerCombatState) => void;
   onSound: (cue: SoundCue) => void;
@@ -188,7 +192,13 @@ export function Player({
       pose.current.attackProgress >= PLAYER_TUNING.attackHitWindow.start &&
       pose.current.attackProgress <= PLAYER_TUNING.attackHitWindow.end
     ) {
-      const assistedEnemyId = getAssistedEnemyId(PLAYER_TUNING.attackReach);
+      const position = body.translation();
+      const rotation = body.rotation();
+      const assistedEnemyId = getAssistedEnemyId(
+        PLAYER_TUNING.attackReach,
+        new THREE.Vector3(position.x, position.y, position.z),
+        new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w),
+      );
       resolveEnemyHit(assistedEnemyId ? `enemy-${assistedEnemyId}` : undefined);
     }
     pose.current.comboStep = comboStep.current;
