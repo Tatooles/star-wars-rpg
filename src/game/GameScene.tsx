@@ -197,7 +197,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
   const enemyBodies = useRef(new Map<string, RapierRigidBody>());
   const lockedTargetRef = useRef<RapierRigidBody>(null);
   const yawRef = useRef(Math.PI) as MutableRefObject<number>;
-  const controls = useControls(playing);
+  const { controls, setMouseButton, releaseMouseButtons } = useControls(playing);
   const blockingRef = useRef(false);
   const invulnerableRef = useRef(false);
   const controlLockUntilRef = useRef(0);
@@ -295,7 +295,18 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
 
   return (
     <>
-      <Canvas
+      <div
+        className="canvas-input-surface"
+        onMouseDown={(event) => {
+          setMouseButton(event.button, true);
+        }}
+        onMouseUp={(event) => {
+          setMouseButton(event.button, false);
+        }}
+        onMouseLeave={releaseMouseButtons}
+        onContextMenu={(event) => event.preventDefault()}
+      >
+        <Canvas
         shadows="basic"
         camera={{ fov: 54, near: 0.08, far: 180, position: [2.4, 4.5, 25] }}
         dpr={[1, 1.7]}
@@ -426,7 +437,8 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
           enabled={playing}
           lockedTargetRef={lockedTargetRef}
         />
-      </Canvas>
+        </Canvas>
+      </div>
       {beaconNearby && !session.beaconDisabled && (
         <div className="interaction-prompt"><kbd>E</kbd> Disable beacon</div>
       )}

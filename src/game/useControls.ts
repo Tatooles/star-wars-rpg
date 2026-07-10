@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 export type Controls = {
   forward: boolean;
@@ -60,6 +60,21 @@ const keyMap: Record<string, ControlAction | undefined> = {
 
 export function useControls(enabled: boolean) {
   const controls = useRef<Controls>({ ...initialControls });
+  const setMouseButton = useCallback(
+    (button: number, pressed: boolean) => {
+      if (!enabled) return;
+      if (button === 0) {
+        controls.current.attack = pressed;
+        if (pressed) controls.current.attackPresses += 1;
+      }
+      if (button === 2) controls.current.block = pressed;
+    },
+    [enabled],
+  );
+  const releaseMouseButtons = useCallback(() => {
+    controls.current.attack = false;
+    controls.current.block = false;
+  }, []);
 
   useEffect(() => {
     const releaseTimers = new Map<ControlAction, number>();
@@ -100,39 +115,19 @@ export function useControls(enabled: boolean) {
         if (action === "interact") controls.current.interactPresses += 1;
       }
     };
-    const onMouse = (pressed: boolean) => (event: MouseEvent) => {
-      if (!enabled) return;
-      if (event.button === 0) {
-        controls.current.attack = pressed;
-        if (pressed) controls.current.attackPresses += 1;
-      }
-      if (event.button === 2) {
-        controls.current.block = pressed;
-      }
-    };
-    const onContextMenu = (event: MouseEvent) => event.preventDefault();
-
     const keyDown = onKey(true);
     const keyUp = onKey(false);
-    const mouseDown = onMouse(true);
-    const mouseUp = onMouse(false);
     window.addEventListener("keydown", keyDown);
     window.addEventListener("keyup", keyUp);
-    window.addEventListener("mousedown", mouseDown);
-    window.addEventListener("mouseup", mouseUp);
-    window.addEventListener("contextmenu", onContextMenu);
     window.addEventListener("blur", releaseHeldControls);
     return () => {
       window.removeEventListener("keydown", keyDown);
       window.removeEventListener("keyup", keyUp);
-      window.removeEventListener("mousedown", mouseDown);
-      window.removeEventListener("mouseup", mouseUp);
-      window.removeEventListener("contextmenu", onContextMenu);
       window.removeEventListener("blur", releaseHeldControls);
       releaseTimers.forEach((timer) => window.clearTimeout(timer));
       releaseHeldControls();
     };
   }, [enabled]);
 
-  return controls;
+  return { controls, setMouseButton, releaseMouseButtons };
 }
