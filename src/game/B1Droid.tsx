@@ -4,6 +4,7 @@ import { RefObject, useRef } from "react";
 import * as THREE from "three";
 import type { EnemyState } from "./session";
 import { B1_TUNING } from "./combatTuning";
+import { EnemyIndicator } from "./EnemyIndicator";
 
 export type ProjectileSpawn = {
   position: THREE.Vector3;
@@ -150,13 +151,11 @@ export function B1Droid({
           distance={3}
           position={[0.4, 0.8, 0.8]}
         />
-        {locked && (
-          <mesh position={[0, 2.3, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[0.32, 0.025, 6, 24]} />
-            <meshBasicMaterial color="#75bdff" toneMapped={false} />
-          </mesh>
-        )}
       </group>
+      <EnemyIndicator
+        enemy={enemy}
+        locked={locked}
+      />
     </RigidBody>
   );
 }

@@ -24,7 +24,6 @@ export function App() {
   const previousLevelUps = useRef(session.levelUpCount);
   const previousScreen = useRef(session.screen);
   const { screen } = session;
-  const lockedEnemy = session.enemies.find((enemy) => enemy.id === session.lockedTargetId);
   const xpProgress =
     session.player.level === 1
       ? (session.player.xp / 75) * 100
@@ -152,14 +151,6 @@ export function App() {
                 <span>CURRENT OBJECTIVE</span>
                 <b>{session.objective}</b>
               </div>
-              {lockedEnemy?.alive && (
-                <div className="target-health">
-                  <span>{lockedEnemy.kind === "b1" ? "B1 BATTLE DROID" : "B2 SUPER BATTLE DROID"}</span>
-                  <div className="target-track">
-                    <i style={{ width: `${(lockedEnemy.health / lockedEnemy.maxHealth) * 100}%` }} />
-                  </div>
-                </div>
-              )}
               <div className="progression-hud">
                 <div className="level-medallion"><span>LEVEL</span><b>{session.player.level}</b></div>
                 <div className="xp-block">
