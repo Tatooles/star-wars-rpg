@@ -6,7 +6,9 @@ export const PLAYER_TUNING = {
   dodgeCooldown: 0.85,
   attackDurations: [0.46, 0.5, 0.62] as const,
   attackDamage: 34,
-  attackHitWindow: { start: 0.18, end: 0.72 },
+  attackHitWindow: { start: 0.14, end: 0.8 },
+  attackReach: 1.65,
+  attackHalfExtents: { width: 1.05, height: 0.82, depth: 1.65 },
   knockbackRecoveryMs: 320,
 } as const;
 
@@ -17,6 +19,8 @@ export const B1_TUNING = {
   fireCooldown: 3.6,
   fireCooldownVariance: 0.8,
   hitRecovery: 0.24,
+  retreatDistance: 4.6,
+  pursueDistance: 10,
 } as const;
 
 export const B2_TUNING = {

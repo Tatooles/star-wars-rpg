@@ -204,7 +204,7 @@ export function Player({
     saberCollider.current?.setEnabled(attackColliderEnabled);
     if (attackColliderEnabled) {
       const rotation = body.rotation();
-      const forward = new THREE.Vector3(0, 0, 1.25).applyQuaternion(
+      const forward = new THREE.Vector3(0, 0, PLAYER_TUNING.attackReach).applyQuaternion(
         new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w),
       );
       const translation = body.translation();
@@ -216,7 +216,11 @@ export function Player({
       world.intersectionsWithShape(
         shapePosition,
         rotation,
-        new rapier.Cuboid(0.8, 0.65, 1.25),
+        new rapier.Cuboid(
+          PLAYER_TUNING.attackHalfExtents.width,
+          PLAYER_TUNING.attackHalfExtents.height,
+          PLAYER_TUNING.attackHalfExtents.depth,
+        ),
         (collider) => {
           const parent = collider.parent();
           const name = parent ? rigidBodyStates.get(parent.handle)?.object.name : undefined;
@@ -246,8 +250,12 @@ export function Player({
       <CapsuleCollider args={[0.62, 0.43]} position={[0, 0.12, 0]} />
       <CuboidCollider
         ref={saberCollider}
-        args={[0.78, 0.65, 1.15]}
-        position={[0, 0.35, 1.2]}
+        args={[
+          PLAYER_TUNING.attackHalfExtents.width,
+          PLAYER_TUNING.attackHalfExtents.height,
+          PLAYER_TUNING.attackHalfExtents.depth,
+        ]}
+        position={[0, 0.35, PLAYER_TUNING.attackReach]}
         sensor
         onIntersectionEnter={({ other }) => {
           if (

@@ -74,9 +74,14 @@ export function B1Droid({
     const strafe = new THREE.Vector3(-towardPlayer.z, 0, towardPlayer.x).multiplyScalar(orbitDirection.current);
     const move = new THREE.Vector3();
     if (engageTime.current > 1.35) {
-      if (distance < 6.5) move.addScaledVector(towardPlayer, -2.4);
-      if (distance > 11) move.addScaledVector(towardPlayer, 2.1);
-      if (distance >= 6.5 && distance <= 11) move.addScaledVector(strafe, 1.15);
+      if (distance < B1_TUNING.retreatDistance) move.addScaledVector(towardPlayer, -2.4);
+      if (distance > B1_TUNING.pursueDistance) move.addScaledVector(towardPlayer, 2.1);
+      if (
+        distance >= B1_TUNING.retreatDistance &&
+        distance <= B1_TUNING.pursueDistance
+      ) {
+        move.addScaledVector(strafe, 1.15);
+      }
     }
     const next = new THREE.Vector3(position.x, position.y, position.z).addScaledVector(move, delta);
     body.setNextKinematicTranslation(next);
