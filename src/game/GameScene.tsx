@@ -62,6 +62,7 @@ function useDeferredQueue() {
 type MissionDirectorProps = {
   controls: RefObject<Controls>;
   playerRef: RefObject<RapierRigidBody | null>;
+  cameraYawRef: RefObject<number>;
   enemyBodies: RefObject<Map<string, RapierRigidBody>>;
   enemyPositions: RefObject<Map<string, THREE.Vector3>>;
   lockedTargetRef: RefObject<RapierRigidBody | null>;
@@ -74,6 +75,7 @@ type MissionDirectorProps = {
 function MissionDirector({
   controls,
   playerRef,
+  cameraYawRef,
   enemyBodies,
   enemyPositions,
   lockedTargetRef,
@@ -88,6 +90,7 @@ function MissionDirector({
   const wasNearBeacon = useRef(false);
   const lineOfSightLostFor = useRef(0);
   const lineOfSightRay = useRef(new THREE.Raycaster());
+  const lastRecenteredEncounter = useRef(0);
 
   useFrame((_, delta) => {
     if (session.screen !== "playing") {
@@ -123,6 +126,23 @@ function MissionDirector({
     const encounterTwoClear = session.enemies
       .filter((enemy) => enemy.encounter === 2)
       .every((enemy) => !enemy.alive);
+
+    if (
+      session.activeEncounter === 1 &&
+      encounterOneClear &&
+      lastRecenteredEncounter.current < 1
+    ) {
+      cameraYawRef.current = Math.PI;
+      lastRecenteredEncounter.current = 1;
+    }
+    if (
+      session.activeEncounter === 2 &&
+      encounterTwoClear &&
+      lastRecenteredEncounter.current < 2
+    ) {
+      cameraYawRef.current = Math.PI;
+      lastRecenteredEncounter.current = 2;
+    }
 
     if (session.activeEncounter === 0 && playerPosition.z < 12) {
       dispatch({ type: "ACTIVATE_ENCOUNTER", encounter: 1 });
@@ -514,6 +534,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
           <MissionDirector
             controls={controls}
             playerRef={playerRef}
+            cameraYawRef={yawRef}
             enemyBodies={enemyBodies}
             enemyPositions={enemyPositions}
             lockedTargetRef={lockedTargetRef}
