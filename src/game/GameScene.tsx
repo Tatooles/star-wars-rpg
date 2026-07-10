@@ -297,10 +297,10 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
     <>
       <div
         className="canvas-input-surface"
-        onMouseDown={(event) => {
+        onMouseDownCapture={(event) => {
           setMouseButton(event.button, true);
         }}
-        onMouseUp={(event) => {
+        onMouseUpCapture={(event) => {
           setMouseButton(event.button, false);
         }}
         onMouseLeave={releaseMouseButtons}
