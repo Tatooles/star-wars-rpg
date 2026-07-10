@@ -63,7 +63,18 @@ export function useControls(enabled: boolean) {
 
   useEffect(() => {
     const releaseTimers = new Map<ControlAction, number>();
-    const reset = () => Object.assign(controls.current, initialControls);
+    const releaseHeldControls = () => {
+      controls.current.forward = false;
+      controls.current.backward = false;
+      controls.current.left = false;
+      controls.current.right = false;
+      controls.current.jump = false;
+      controls.current.dodge = false;
+      controls.current.attack = false;
+      controls.current.block = false;
+      controls.current.lock = false;
+      controls.current.interact = false;
+    };
     const onKey = (pressed: boolean) => (event: KeyboardEvent) => {
       const action = keyMap[event.code];
       if (!action || !enabled) return;
@@ -110,16 +121,16 @@ export function useControls(enabled: boolean) {
     window.addEventListener("mousedown", mouseDown);
     window.addEventListener("mouseup", mouseUp);
     window.addEventListener("contextmenu", onContextMenu);
-    window.addEventListener("blur", reset);
+    window.addEventListener("blur", releaseHeldControls);
     return () => {
       window.removeEventListener("keydown", keyDown);
       window.removeEventListener("keyup", keyUp);
       window.removeEventListener("mousedown", mouseDown);
       window.removeEventListener("mouseup", mouseUp);
       window.removeEventListener("contextmenu", onContextMenu);
-      window.removeEventListener("blur", reset);
+      window.removeEventListener("blur", releaseHeldControls);
       releaseTimers.forEach((timer) => window.clearTimeout(timer));
-      reset();
+      releaseHeldControls();
     };
   }, [enabled]);
 

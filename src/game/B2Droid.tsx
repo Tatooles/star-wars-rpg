@@ -4,6 +4,7 @@ import { RefObject, useRef } from "react";
 import * as THREE from "three";
 import type { ProjectileSpawn } from "./B1Droid";
 import type { EnemyState } from "./session";
+import { B2_TUNING } from "./combatTuning";
 
 type B2DroidProps = {
   enemy: EnemyState;
@@ -30,7 +31,7 @@ export function B2Droid({
   onMelee,
 }: B2DroidProps) {
   const bodyRef = useRef<RapierRigidBody>(null);
-  const burstCooldown = useRef(1.4);
+  const burstCooldown = useRef<number>(B2_TUNING.initialBurstCooldown);
   const burstShots = useRef(0);
   const burstTimer = useRef(0);
   const meleeCooldown = useRef(0);
@@ -43,7 +44,7 @@ export function B2Droid({
     const body = bodyRef.current;
     const player = playerRef.current;
     registerBody(enemy.id, enemy.alive ? body : null);
-    if (enemy.health < lastHealth.current) hitReaction.current = 0.3;
+    if (enemy.health < lastHealth.current) hitReaction.current = B2_TUNING.hitRecovery;
     lastHealth.current = enemy.health;
     hitReaction.current = Math.max(0, hitReaction.current - delta);
     if (model.current) {
@@ -77,17 +78,17 @@ export function B2Droid({
     );
 
     meleeCooldown.current = Math.max(0, meleeCooldown.current - delta);
-    if (distance < 2.7 && meleeCooldown.current <= 0) {
+    if (distance < B2_TUNING.meleeRange && meleeCooldown.current <= 0) {
       onMelee(towardPlayer);
-      meleeCooldown.current = 2.35;
+      meleeCooldown.current = B2_TUNING.meleeCooldown;
     }
 
     burstCooldown.current -= delta;
     burstTimer.current -= delta;
     if (burstCooldown.current <= 0 && burstShots.current === 0 && distance < 24) {
-      burstShots.current = 3;
+      burstShots.current = B2_TUNING.burstShots;
       burstTimer.current = 0;
-      burstCooldown.current = 3.4;
+      burstCooldown.current = B2_TUNING.burstCooldown;
     }
     if (burstShots.current > 0 && burstTimer.current <= 0) {
       const muzzle = new THREE.Vector3(position.x + 0.58, position.y + 1.25, position.z)
@@ -95,7 +96,7 @@ export function B2Droid({
       const target = new THREE.Vector3(playerPosition.x, playerPosition.y + 0.2, playerPosition.z);
       onFire({ position: muzzle, direction: target.sub(muzzle).normalize(), sourceId: enemy.id });
       burstShots.current -= 1;
-      burstTimer.current = 0.22;
+      burstTimer.current = B2_TUNING.burstSpacing;
       if (muzzleFlash.current) muzzleFlash.current.intensity = 12;
     }
     if (muzzleFlash.current) muzzleFlash.current.intensity *= Math.exp(-delta * 18);

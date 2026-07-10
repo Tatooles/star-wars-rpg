@@ -22,7 +22,14 @@ describe("game session", () => {
 
     expect(started.screen).toBe("playing");
     expect(started.runId).toBe(5);
-    expect(started.player).toEqual({ health: 100, maxHealth: 100, level: 1, xp: 0, damageMultiplier: 1 });
+    expect(started.player).toEqual({
+      health: 100,
+      maxHealth: 100,
+      level: 1,
+      xp: 0,
+      damageMultiplier: 1,
+      combat: { attacking: false, blocking: false, dodging: false, comboStep: 0 },
+    });
     expect(started.enemies.filter((enemy) => enemy.kind === "b1")).toHaveLength(8);
     expect(started.enemies.filter((enemy) => enemy.kind === "b2")).toHaveLength(1);
     expect(started.enemies.every((enemy) => enemy.alive)).toBe(true);
@@ -78,5 +85,49 @@ describe("game session", () => {
     const defeated = sessionReducer(createSession("playing"), { type: "DAMAGE_PLAYER", amount: 100 });
     expect(defeated.player.health).toBe(0);
     expect(defeated.screen).toBe("defeated");
+  });
+
+  it("keeps authoritative combat state and resets it on pause or restart", () => {
+    let session = sessionReducer(createSession("playing"), {
+      type: "SET_COMBAT_STATE",
+      combat: { attacking: true, blocking: false, dodging: false, comboStep: 2 },
+    });
+
+    expect(session.player.combat).toEqual({
+      attacking: true,
+      blocking: false,
+      dodging: false,
+      comboStep: 2,
+    });
+
+    session = sessionReducer(session, { type: "PAUSE" });
+    expect(session.player.combat).toEqual({
+      attacking: false,
+      blocking: false,
+      dodging: false,
+      comboStep: 0,
+    });
+
+    session = sessionReducer(session, { type: "START_MISSION" });
+    expect(session.player.combat).toEqual({
+      attacking: false,
+      blocking: false,
+      dodging: false,
+      comboStep: 0,
+    });
+  });
+
+  it("does not damage Anakin while blocking or dodging", () => {
+    const blocking = sessionReducer(createSession("playing"), {
+      type: "SET_COMBAT_STATE",
+      combat: { attacking: false, blocking: true, dodging: false, comboStep: 0 },
+    });
+    const dodging = sessionReducer(createSession("playing"), {
+      type: "SET_COMBAT_STATE",
+      combat: { attacking: false, blocking: false, dodging: true, comboStep: 0 },
+    });
+
+    expect(sessionReducer(blocking, { type: "DAMAGE_PLAYER", amount: 10 })).toBe(blocking);
+    expect(sessionReducer(dodging, { type: "DAMAGE_PLAYER", amount: 10 })).toBe(dodging);
   });
 });

@@ -3,6 +3,7 @@ import { CapsuleCollider, RapierRigidBody, RigidBody } from "@react-three/rapier
 import { RefObject, useRef } from "react";
 import * as THREE from "three";
 import type { EnemyState } from "./session";
+import { B1_TUNING } from "./combatTuning";
 
 export type ProjectileSpawn = {
   position: THREE.Vector3;
@@ -33,7 +34,10 @@ export function B1Droid({
   onFire,
 }: B1DroidProps) {
   const bodyRef = useRef<RapierRigidBody>(null);
-  const fireTimer = useRef(1.8 + (Number(enemy.id.split("-")[1]) % 4) * 0.55);
+  const fireTimer = useRef(
+    B1_TUNING.initialFireDelay +
+      (Number(enemy.id.split("-")[1]) % 4) * B1_TUNING.initialFireDelayStep,
+  );
   const telegraph = useRef(0);
   const orbitDirection = useRef(1);
   const engageTime = useRef(0);
@@ -46,7 +50,7 @@ export function B1Droid({
     const body = bodyRef.current;
     const player = playerRef.current;
     registerBody(enemy.id, enemy.alive ? body : null);
-    if (enemy.health < lastHealth.current) hitReaction.current = 0.24;
+    if (enemy.health < lastHealth.current) hitReaction.current = B1_TUNING.hitRecovery;
     lastHealth.current = enemy.health;
     hitReaction.current = Math.max(0, hitReaction.current - delta);
     if (model.current) {
@@ -80,12 +84,14 @@ export function B1Droid({
     body.setNextKinematicRotation(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw));
 
     fireTimer.current -= delta;
-    if (fireTimer.current <= 0.42 && fireTimer.current > 0) telegraph.current = 1 - fireTimer.current / 0.42;
+    if (fireTimer.current <= B1_TUNING.telegraphDuration && fireTimer.current > 0) {
+      telegraph.current = 1 - fireTimer.current / B1_TUNING.telegraphDuration;
+    }
     if (fireTimer.current <= 0) {
       const muzzle = new THREE.Vector3(position.x, position.y + 1.1, position.z).addScaledVector(towardPlayer, 0.7);
       const target = new THREE.Vector3(playerPosition.x, playerPosition.y + 0.2, playerPosition.z);
       onFire({ position: muzzle, direction: target.sub(muzzle).normalize(), sourceId: enemy.id });
-      fireTimer.current = 3.6 + Math.random() * 0.8;
+      fireTimer.current = B1_TUNING.fireCooldown + Math.random() * B1_TUNING.fireCooldownVariance;
       telegraph.current = 0;
       if (Math.random() > 0.68) orbitDirection.current *= -1;
     }

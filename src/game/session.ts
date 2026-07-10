@@ -16,6 +16,20 @@ export type EnemyState = {
   position: [number, number, number];
 };
 
+export type PlayerCombatState = {
+  attacking: boolean;
+  blocking: boolean;
+  dodging: boolean;
+  comboStep: 0 | 1 | 2;
+};
+
+export const IDLE_COMBAT_STATE: PlayerCombatState = {
+  attacking: false,
+  blocking: false,
+  dodging: false,
+  comboStep: 0,
+};
+
 export type GameSession = {
   screen: ScreenState;
   runId: number;
@@ -25,6 +39,7 @@ export type GameSession = {
     level: 1 | 2 | 3;
     xp: number;
     damageMultiplier: number;
+    combat: PlayerCombatState;
   };
   enemies: EnemyState[];
   activeEncounter: 0 | 1 | 2 | 3;
@@ -41,6 +56,7 @@ export type SessionAction =
   | { type: "RESUME" }
   | { type: "ACTIVATE_ENCOUNTER"; encounter: 1 | 2 | 3 }
   | { type: "DAMAGE_PLAYER"; amount: number }
+  | { type: "SET_COMBAT_STATE"; combat: PlayerCombatState }
   | { type: "DAMAGE_ENEMY"; enemyId: string; amount: number }
   | { type: "TOGGLE_LOCK"; enemyId: string | null }
   | { type: "CLEAR_LOCK" }
@@ -85,7 +101,14 @@ export function createSession(screen: ScreenState = "title", runId = 0): GameSes
   return {
     screen,
     runId,
-    player: { health: 100, maxHealth: 100, level: 1, xp: 0, damageMultiplier: 1 },
+    player: {
+      health: 100,
+      maxHealth: 100,
+      level: 1,
+      xp: 0,
+      damageMultiplier: 1,
+      combat: { ...IDLE_COMBAT_STATE },
+    },
     enemies: createEnemies(),
     activeEncounter: 0,
     lockedTargetId: null,
@@ -107,7 +130,13 @@ export function sessionReducer(session: GameSession, action: SessionAction): Gam
     case "START_MISSION":
       return createSession("playing", session.runId + 1);
     case "PAUSE":
-      return session.screen === "playing" ? { ...session, screen: "paused" } : session;
+      return session.screen === "playing"
+        ? {
+            ...session,
+            screen: "paused",
+            player: { ...session.player, combat: { ...IDLE_COMBAT_STATE } },
+          }
+        : session;
     case "RESUME":
       return session.screen === "paused" ? { ...session, screen: "playing" } : session;
     case "ACTIVATE_ENCOUNTER": {
@@ -120,6 +149,7 @@ export function sessionReducer(session: GameSession, action: SessionAction): Gam
     }
     case "DAMAGE_PLAYER": {
       if (session.screen !== "playing") return session;
+      if (session.player.combat.blocking || session.player.combat.dodging) return session;
       const health = Math.max(0, session.player.health - action.amount);
       return {
         ...session,
@@ -127,6 +157,20 @@ export function sessionReducer(session: GameSession, action: SessionAction): Gam
         player: { ...session.player, health },
         lockedTargetId: health === 0 ? null : session.lockedTargetId,
       };
+    }
+    case "SET_COMBAT_STATE": {
+      if (session.screen !== "playing") return session;
+      const current = session.player.combat;
+      const next = action.combat;
+      if (
+        current.attacking === next.attacking &&
+        current.blocking === next.blocking &&
+        current.dodging === next.dodging &&
+        current.comboStep === next.comboStep
+      ) {
+        return session;
+      }
+      return { ...session, player: { ...session.player, combat: next } };
     }
     case "DAMAGE_ENEMY": {
       if (session.screen !== "playing") return session;

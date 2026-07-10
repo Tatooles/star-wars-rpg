@@ -1,6 +1,7 @@
 import { useFrame } from "@react-three/fiber";
 import { BallCollider, RapierRigidBody, RigidBody } from "@react-three/rapier";
 import { RefObject, useRef } from "react";
+import { PROJECTILE_TUNING } from "./combatTuning";
 
 export type ProjectileState = {
   id: number;
@@ -41,23 +42,23 @@ export function Projectile({
     age.current += delta;
     if (projectile.reflected) {
       reflectedAge.current += delta;
-      if (reflectedAge.current >= 0.22) {
+      if (reflectedAge.current >= PROJECTILE_TUNING.reflectedFallbackHitDelay) {
         resolved.current = true;
-        onEnemyHit(projectile.sourceId, 100);
+        onEnemyHit(projectile.sourceId, PROJECTILE_TUNING.reflectedDamage);
         onRemove(projectile.id);
         return;
       }
     }
-    if (age.current > 5) {
+    if (age.current > PROJECTILE_TUNING.lifetime) {
       resolved.current = true;
       onRemove(projectile.id);
       return;
     }
     const position = body.current.translation();
     body.current.setNextKinematicTranslation({
-      x: position.x + projectile.direction[0] * delta * (projectile.reflected ? 18 : 13),
-      y: position.y + projectile.direction[1] * delta * (projectile.reflected ? 18 : 13),
-      z: position.z + projectile.direction[2] * delta * (projectile.reflected ? 18 : 13),
+      x: position.x + projectile.direction[0] * delta * (projectile.reflected ? PROJECTILE_TUNING.reflectedSpeed : PROJECTILE_TUNING.speed),
+      y: position.y + projectile.direction[1] * delta * (projectile.reflected ? PROJECTILE_TUNING.reflectedSpeed : PROJECTILE_TUNING.speed),
+      z: position.z + projectile.direction[2] * delta * (projectile.reflected ? PROJECTILE_TUNING.reflectedSpeed : PROJECTILE_TUNING.speed),
     });
   });
 
@@ -82,7 +83,11 @@ export function Projectile({
             } else {
               resolved.current = true;
               if (!invulnerableRef.current) {
-                onPlayerHit(projectile.sourceId === "b2-guardian" ? 4 : 2);
+                onPlayerHit(
+                  projectile.sourceId === "b2-guardian"
+                    ? PROJECTILE_TUNING.b2Damage
+                    : PROJECTILE_TUNING.b1Damage,
+                );
               }
               onRemove(projectile.id);
             }
@@ -90,7 +95,7 @@ export function Projectile({
           if (name?.startsWith("enemy-") && projectile.reflected && name !== `enemy-${projectile.sourceId}`) return;
           if (name === `enemy-${projectile.sourceId}` && projectile.reflected) {
             resolved.current = true;
-            onEnemyHit(projectile.sourceId, 100);
+            onEnemyHit(projectile.sourceId, PROJECTILE_TUNING.reflectedDamage);
             onRemove(projectile.id);
           }
         }}

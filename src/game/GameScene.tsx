@@ -21,6 +21,7 @@ import { Projectile, type ProjectileState } from "./Projectile";
 import type { GameSession, SessionAction } from "./session";
 import { useControls, type Controls } from "./useControls";
 import type { SoundCue } from "./audio";
+import { B2_TUNING, PLAYER_TUNING } from "./combatTuning";
 
 type GameSceneProps = {
   playing: boolean;
@@ -62,6 +63,11 @@ function MissionDirector({
   const lineOfSightLostFor = useRef(0);
 
   useFrame((_, delta) => {
+    if (session.screen !== "playing") {
+      lastLockPress.current = controls.current.lockPresses;
+      lastInteractPress.current = controls.current.interactPresses;
+      return;
+    }
     const player = playerRef.current;
     if (!player) return;
     const playerPosition = player.translation();
@@ -306,6 +312,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             bodyRef={playerRef}
             cameraYaw={yawRef}
             controls={controls}
+            playing={playing}
             damageMultiplier={session.player.damageMultiplier}
             blockingRef={blockingRef}
             invulnerableRef={invulnerableRef}
@@ -313,6 +320,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             controlLockUntilRef={controlLockUntilRef}
             onSound={onSound}
             onEnemyHit={damageEnemy}
+            onCombatStateChange={(combat) => dispatch({ type: "SET_COMBAT_STATE", combat })}
           />
           {session.enemies.map((enemy) =>
             enemy.kind === "b1" ? (
@@ -337,13 +345,17 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
                 registerBody={registerEnemyBody}
                 onFire={spawnProjectile}
                 onMelee={(direction) => {
+                  if (blockingRef.current) {
+                    onSound("reflect");
+                    return;
+                  }
                   if (invulnerableRef.current) return;
-                  controlLockUntilRef.current = performance.now() + 320;
+                  controlLockUntilRef.current = performance.now() + PLAYER_TUNING.knockbackRecoveryMs;
                   playerRef.current?.applyImpulse(
                     { x: direction.x * 4.5, y: 2.8, z: direction.z * 4.5 },
                     true,
                   );
-                  dispatch({ type: "DAMAGE_PLAYER", amount: 10 });
+                  dispatch({ type: "DAMAGE_PLAYER", amount: B2_TUNING.meleeDamage });
                 }}
               />
             ),
@@ -359,7 +371,12 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
               onReflect={reflectProjectile}
               onPlayerHit={(amount) => dispatch({ type: "DAMAGE_PLAYER", amount })}
               onEnemyHit={(enemyId, amount) =>
-                damageEnemy(enemyId, enemyId === "b2-guardian" ? Math.min(amount, 55) : amount)
+                damageEnemy(
+                  enemyId,
+                  enemyId === "b2-guardian"
+                    ? Math.min(amount, B2_TUNING.reflectedDamageCap)
+                    : amount,
+                )
               }
             />
           ))}
