@@ -1,6 +1,10 @@
-import { useCallback, useEffect, useReducer } from "react";
-import { GameScene } from "./game/GameScene";
+import { lazy, Suspense, useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { ProceduralAudio, type SoundCue } from "./game/audio";
 import { createSession, sessionReducer } from "./game/session";
+
+const GameScene = lazy(() =>
+  import("./game/GameScene").then((module) => ({ default: module.GameScene })),
+);
 
 const controls = [
   ["W A S D", "Move"],
@@ -15,6 +19,11 @@ const controls = [
 
 export function App() {
   const [session, dispatch] = useReducer(sessionReducer, undefined, () => createSession());
+  const [audio] = useState(() => new ProceduralAudio());
+  const previousHealth = useRef(session.player.health);
+  const previousDefeats = useRef(session.enemiesDefeated);
+  const previousLevelUps = useRef(session.levelUpCount);
+  const previousScreen = useRef(session.screen);
   const { screen } = session;
   const lockedEnemy = session.enemies.find((enemy) => enemy.id === session.lockedTargetId);
   const xpProgress =
@@ -25,24 +34,38 @@ export function App() {
         : 100;
 
   const startMission = useCallback(() => {
+    void audio.start().catch(() => undefined);
     dispatch({ type: "START_MISSION" });
     document.documentElement.requestPointerLock?.().catch(() => undefined);
-  }, []);
+  }, [audio]);
 
   const pause = useCallback(() => {
     if (screen !== "playing") return;
     document.exitPointerLock?.();
+    void audio.suspend().catch(() => undefined);
     dispatch({ type: "PAUSE" });
-  }, [screen]);
+  }, [audio, screen]);
 
   const resume = useCallback(() => {
+    void audio.resume().catch(() => undefined);
     dispatch({ type: "RESUME" });
     document.documentElement.requestPointerLock?.().catch(() => undefined);
-  }, []);
+  }, [audio]);
 
   useEffect(() => {
     if (screen === "defeated" || screen === "complete") document.exitPointerLock?.();
   }, [screen]);
+
+  useEffect(() => {
+    if (session.player.health < previousHealth.current) audio.play("hurt");
+    if (session.enemiesDefeated > previousDefeats.current) audio.play("destroy");
+    if (session.levelUpCount > previousLevelUps.current) audio.play("levelUp");
+    if (session.screen === "complete" && previousScreen.current !== "complete") audio.play("beacon");
+    previousHealth.current = session.player.health;
+    previousDefeats.current = session.enemiesDefeated;
+    previousLevelUps.current = session.levelUpCount;
+    previousScreen.current = session.screen;
+  }, [audio, session]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -51,6 +74,16 @@ export function App() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [pause]);
+
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden" && screen === "playing") pause();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [pause, screen]);
+
+  const playSound = useCallback((cue: SoundCue) => audio.play(cue), [audio]);
 
   return (
     <main className="app-shell">
@@ -103,12 +136,15 @@ export function App() {
 
         {(screen === "playing" || screen === "paused" || screen === "defeated") && (
           <section className="game-placeholder" aria-label="Mission in progress">
-            <GameScene
-              key={session.runId}
-              playing={screen === "playing"}
-              session={session}
-              dispatch={dispatch}
-            />
+            <Suspense fallback={<div className="mission-loading">INITIALIZING MISSION...</div>}>
+              <GameScene
+                key={session.runId}
+                playing={screen === "playing"}
+                session={session}
+                dispatch={dispatch}
+                onSound={playSound}
+              />
+            </Suspense>
             <div className="combat-hud">
               <div className="health-block">
                 <span>ANAKIN</span>

@@ -11,6 +11,7 @@ import { RefObject, useRef } from "react";
 import * as THREE from "three";
 import { AnakinModel, type CombatPose } from "./AnakinModel";
 import type { Controls } from "./useControls";
+import type { SoundCue } from "./audio";
 
 const RUN_SPEED = 7.2;
 const JUMP_SPEED = 7.4;
@@ -26,6 +27,7 @@ type PlayerProps = {
   invulnerableRef: RefObject<boolean>;
   lockedTargetRef: RefObject<RapierRigidBody | null>;
   onEnemyHit: (enemyId: string, damage: number) => void;
+  onSound: (cue: SoundCue) => void;
 };
 
 export function Player({
@@ -37,6 +39,7 @@ export function Player({
   invulnerableRef,
   lockedTargetRef,
   onEnemyHit,
+  onSound,
 }: PlayerProps) {
   const { world, rapier, rigidBodyStates } = useRapier();
   const model = useRef<THREE.Group>(null);
@@ -79,6 +82,7 @@ export function Player({
       if (wantsDodge) {
         dodgeTime.current = 0.24;
         dodgeCooldown.current = 0.85;
+        onSound("dodge");
       }
       const speed = dodgeTime.current > 0 ? DODGE_SPEED : RUN_SPEED;
       body.setLinvel(
@@ -124,6 +128,7 @@ export function Player({
       attackDuration.current = ATTACK_DURATIONS[comboStep.current];
       attackTime.current = attackDuration.current;
       hitThisSwing.current.clear();
+      onSound("swing");
     }
     lastAttackPress.current = input.attackPresses;
     if (input.blockPresses !== lastBlockPress.current) blockGrace.current = 0.9;

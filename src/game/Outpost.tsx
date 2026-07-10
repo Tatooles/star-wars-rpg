@@ -4,6 +4,13 @@ import * as THREE from "three";
 const rockMaterial = new THREE.MeshStandardMaterial({ color: "#4b4038", roughness: 0.96 });
 const groundMaterial = new THREE.MeshStandardMaterial({ color: "#312c29", roughness: 1 });
 const metalMaterial = new THREE.MeshStandardMaterial({ color: "#303b40", roughness: 0.68, metalness: 0.45 });
+const pathMaterial = new THREE.MeshStandardMaterial({ color: "#50443a", roughness: 0.94 });
+const signalMaterial = new THREE.MeshStandardMaterial({
+  color: "#512116",
+  emissive: "#d94226",
+  emissiveIntensity: 2.2,
+  roughness: 0.5,
+});
 
 type ObstacleProps = {
   position: [number, number, number];
@@ -15,8 +22,18 @@ type ObstacleProps = {
 function Obstacle({ position, size, rotation = [0, 0, 0], material = rockMaterial }: ObstacleProps) {
   return (
     <RigidBody type="fixed" colliders="cuboid" position={position} rotation={rotation}>
-      <mesh material={material} castShadow receiveShadow userData={{ cameraObstacle: true }}>
-        <boxGeometry args={size} />
+      <mesh
+        material={material}
+        scale={material === rockMaterial ? [size[0] / 2, size[1] / 2, size[2] / 2] : [1, 1, 1]}
+        castShadow
+        receiveShadow
+        userData={{ cameraObstacle: true }}
+      >
+        {material === rockMaterial ? (
+          <dodecahedronGeometry args={[1, 0]} />
+        ) : (
+          <boxGeometry args={size} />
+        )}
       </mesh>
     </RigidBody>
   );
@@ -30,6 +47,17 @@ export function Outpost() {
           <boxGeometry args={[24, 1, 78]} />
         </mesh>
       </RigidBody>
+      {Array.from({ length: 13 }, (_, index) => (
+        <mesh
+          key={index}
+          material={pathMaterial}
+          position={[0, 0.015, 22 - index * 5.3]}
+          rotation={[0, index % 2 === 0 ? 0.015 : -0.015, 0]}
+          receiveShadow
+        >
+          <boxGeometry args={[7.4, 0.05, 4.6]} />
+        </mesh>
+      ))}
       <RigidBody type="fixed" colliders={false}>
         <CuboidCollider args={[0.7, 4, 39]} position={[-12.3, 3, -10]} />
         <CuboidCollider args={[0.7, 4, 39]} position={[12.3, 3, -10]} />
@@ -65,7 +93,17 @@ export function Outpost() {
           </mesh>
         </group>
       ))}
-      <gridHelper args={[76, 76, "#4c5554", "#353334"]} position={[0, 0.01, -10]} />
+      {[-1, 1].map((side) => (
+        <group key={`signal-${side}`} position={[side * 5.2, 1.05, -31]}>
+          <mesh material={metalMaterial} castShadow>
+            <boxGeometry args={[0.8, 2.1, 0.8]} />
+          </mesh>
+          <mesh material={signalMaterial} position={[0, 0.5, 0.42]}>
+            <boxGeometry args={[0.28, 0.64, 0.08]} />
+          </mesh>
+          <pointLight color="#f34e2d" intensity={5} distance={5} position={[0, 0.5, 0.7]} />
+        </group>
+      ))}
     </group>
   );
 }

@@ -12,17 +12,27 @@ import * as THREE from "three";
 import { B1Droid, type ProjectileSpawn } from "./B1Droid";
 import { B2Droid } from "./B2Droid";
 import { Beacon } from "./Beacon";
+import { Atmosphere } from "./Atmosphere";
 import { CameraRig } from "./CameraRig";
 import { Outpost } from "./Outpost";
 import { Player } from "./Player";
+import { ImpactBurst } from "./ImpactBurst";
 import { Projectile, type ProjectileState } from "./Projectile";
 import type { GameSession, SessionAction } from "./session";
 import { useControls, type Controls } from "./useControls";
+import type { SoundCue } from "./audio";
 
 type GameSceneProps = {
   playing: boolean;
   session: GameSession;
   dispatch: Dispatch<SessionAction>;
+  onSound: (cue: SoundCue) => void;
+};
+
+type ImpactState = {
+  id: number;
+  position: [number, number, number];
+  destructive: boolean;
 };
 
 type MissionDirectorProps = {
@@ -150,7 +160,7 @@ function EncounterGate({ z }: { z: number }) {
   );
 }
 
-export function GameScene({ playing, session, dispatch }: GameSceneProps) {
+export function GameScene({ playing, session, dispatch, onSound }: GameSceneProps) {
   const playerRef = useRef<RapierRigidBody>(null);
   const enemyBodies = useRef(new Map<string, RapierRigidBody>());
   const lockedTargetRef = useRef<RapierRigidBody>(null);
@@ -159,7 +169,9 @@ export function GameScene({ playing, session, dispatch }: GameSceneProps) {
   const blockingRef = useRef(false);
   const invulnerableRef = useRef(false);
   const nextProjectileId = useRef(1);
+  const nextImpactId = useRef(1);
   const [projectiles, setProjectiles] = useState<ProjectileState[]>([]);
+  const [impacts, setImpacts] = useState<ImpactState[]>([]);
   const [beaconNearby, setBeaconNearby] = useState(false);
 
   const registerEnemyBody = useCallback((enemyId: string, body: RapierRigidBody | null) => {
@@ -172,6 +184,7 @@ export function GameScene({ playing, session, dispatch }: GameSceneProps) {
   }, []);
 
   const spawnProjectile = useCallback((spawn: ProjectileSpawn) => {
+    onSound("blaster");
     const id = nextProjectileId.current++;
     setProjectiles((current) => [
       ...current,
@@ -183,10 +196,11 @@ export function GameScene({ playing, session, dispatch }: GameSceneProps) {
         reflected: false,
       },
     ]);
-  }, []);
+  }, [onSound]);
 
   const reflectProjectile = useCallback(
     (id: number, projectilePosition: [number, number, number]) => {
+      onSound("reflect");
       setProjectiles((current) =>
         current.map((projectile) => {
           if (projectile.id !== id) return projectile;
@@ -202,7 +216,29 @@ export function GameScene({ playing, session, dispatch }: GameSceneProps) {
         }),
       );
     },
-    [],
+    [onSound],
+  );
+
+  const damageEnemy = useCallback(
+    (enemyId: string, amount: number) => {
+      const enemy = session.enemies.find((candidate) => candidate.id === enemyId);
+      const body = enemyBodies.current.get(enemyId);
+      if (enemy?.alive && body) {
+        const position = body.translation();
+        const impactId = nextImpactId.current++;
+        setImpacts((current) => [
+          ...current,
+          {
+            id: impactId,
+            position: [position.x, position.y + 0.8, position.z],
+            destructive: amount >= enemy.health,
+          },
+        ]);
+      }
+      onSound("impact");
+      dispatch({ type: "DAMAGE_ENEMY", enemyId, amount });
+    },
+    [dispatch, onSound, session.enemies],
   );
 
   const encounterOneAlive = session.enemies.some((enemy) => enemy.encounter === 1 && enemy.alive);
@@ -222,6 +258,7 @@ export function GameScene({ playing, session, dispatch }: GameSceneProps) {
       >
         <color attach="background" args={["#141719"]} />
         <fog attach="fog" args={["#292723", 30, 100]} />
+        <Atmosphere />
         <hemisphereLight args={["#9eb7c8", "#3b251a", 1.8]} />
         <directionalLight
           castShadow
@@ -246,7 +283,8 @@ export function GameScene({ playing, session, dispatch }: GameSceneProps) {
             blockingRef={blockingRef}
             invulnerableRef={invulnerableRef}
             lockedTargetRef={lockedTargetRef}
-            onEnemyHit={(enemyId, amount) => dispatch({ type: "DAMAGE_ENEMY", enemyId, amount })}
+            onSound={onSound}
+            onEnemyHit={damageEnemy}
           />
           {session.enemies.map((enemy) =>
             enemy.kind === "b1" ? (
@@ -291,11 +329,7 @@ export function GameScene({ playing, session, dispatch }: GameSceneProps) {
               onReflect={reflectProjectile}
               onPlayerHit={(amount) => dispatch({ type: "DAMAGE_PLAYER", amount })}
               onEnemyHit={(enemyId, amount) =>
-                dispatch({
-                  type: "DAMAGE_ENEMY",
-                  enemyId,
-                  amount: enemyId === "b2-guardian" ? Math.min(amount, 55) : amount,
-                })
+                damageEnemy(enemyId, enemyId === "b2-guardian" ? Math.min(amount, 55) : amount)
               }
             />
           ))}
@@ -311,6 +345,16 @@ export function GameScene({ playing, session, dispatch }: GameSceneProps) {
             setBeaconNearby={setBeaconNearby}
           />
         </Physics>
+        {impacts.map((impact) => (
+          <ImpactBurst
+            key={impact.id}
+            position={impact.position}
+            destructive={impact.destructive}
+            onComplete={() =>
+              setImpacts((current) => current.filter((candidate) => candidate.id !== impact.id))
+            }
+          />
+        ))}
         <CameraRig
           playerRef={playerRef}
           yawRef={yawRef}

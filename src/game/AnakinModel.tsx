@@ -34,6 +34,7 @@ export function AnakinModel({ moving, combatPose }: AnakinModelProps) {
   const rightLeg = useRef<THREE.Group>(null);
   const rightArm = useRef<THREE.Group>(null);
   const saber = useRef<THREE.Group>(null);
+  const saberTrail = useRef<THREE.Mesh>(null);
   const body = useRef<THREE.Group>(null);
 
   useFrame(({ clock }) => {
@@ -53,6 +54,12 @@ export function AnakinModel({ moving, combatPose }: AnakinModelProps) {
       }
     }
     if (saber.current) saber.current.rotation.z = pose.comboStep === 2 ? 0.28 : -0.18;
+    if (saberTrail.current && saberTrail.current.material instanceof THREE.MeshBasicMaterial) {
+      saberTrail.current.visible = pose.attacking;
+      saberTrail.current.material.opacity = pose.attacking
+        ? Math.sin(pose.attackProgress * Math.PI) * 0.22
+        : 0;
+    }
     if (body.current) body.current.rotation.z = pose.dodging ? -0.28 : 0;
   });
 
@@ -110,6 +117,18 @@ export function AnakinModel({ moving, combatPose }: AnakinModelProps) {
             <cylinderGeometry args={[0.095, 0.095, 2.3, 10]} />
           </mesh>
           <pointLight color="#238fff" intensity={5} distance={4} position={[0, 1.2, 0]} />
+          <mesh ref={saberTrail} position={[0, 0.75, 0]} rotation={[Math.PI / 2, 0, 0]} visible={false}>
+            <ringGeometry args={[0.55, 2.15, 28, 1, -1.1, 2.2]} />
+            <meshBasicMaterial
+              color="#4db4ff"
+              transparent
+              opacity={0}
+              depthWrite={false}
+              side={THREE.DoubleSide}
+              blending={THREE.AdditiveBlending}
+              toneMapped={false}
+            />
+          </mesh>
         </group>
       </group>
     </group>
