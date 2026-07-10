@@ -181,6 +181,18 @@ export function Player({
       attackTime.current = attackDuration.current;
       hitThisSwing.current.clear();
       onSound((`swing${comboStep.current + 1}`) as SoundCue);
+      const assistedTarget = lockedTargetRef.current;
+      if (assistedTarget) {
+        const playerPosition = body.translation();
+        const targetPosition = assistedTarget.translation();
+        const targetDistance = Math.hypot(
+          targetPosition.x - playerPosition.x,
+          targetPosition.z - playerPosition.z,
+        );
+        if (targetDistance <= PLAYER_TUNING.targetAssistRange) {
+          resolveEnemyHit(rigidBodyStates.get(assistedTarget.handle)?.object.name);
+        }
+      }
     }
     lastAttackPress.current = input.attackPresses;
     attackTime.current = Math.max(0, attackTime.current - delta);
