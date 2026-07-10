@@ -5,7 +5,6 @@ import {
   RapierCollider,
   RapierRigidBody,
   RigidBody,
-  useRapier,
 } from "@react-three/rapier";
 import { RefObject, useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
@@ -46,7 +45,6 @@ export function Player({
   onCombatStateChange,
   onSound,
 }: PlayerProps) {
-  const { world, rapier, rigidBodyStates } = useRapier();
   const model = useRef<THREE.Group>(null);
   const moving = useRef(false);
   const lastJumpPress = useRef(0);
@@ -216,37 +214,6 @@ export function Player({
       comboStep: comboStep.current as 0 | 1 | 2,
     });
     saberCollider.current?.setEnabled(attackColliderEnabled);
-    if (attackColliderEnabled) {
-      const rotation = body.rotation();
-      const forward = new THREE.Vector3(0, 0, PLAYER_TUNING.attackReach).applyQuaternion(
-        new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w),
-      );
-      const translation = body.translation();
-      const shapePosition = {
-        x: translation.x + forward.x,
-        y: translation.y + 0.35,
-        z: translation.z + forward.z,
-      };
-      world.intersectionsWithShape(
-        shapePosition,
-        rotation,
-        new rapier.Cuboid(
-          PLAYER_TUNING.attackHalfExtents.width,
-          PLAYER_TUNING.attackHalfExtents.height,
-          PLAYER_TUNING.attackHalfExtents.depth,
-        ),
-        (collider) => {
-          const parent = collider.parent();
-          const name = parent ? rigidBodyStates.get(parent.handle)?.object.name : undefined;
-          if (name?.startsWith("enemy-")) resolveEnemyHit(name);
-          return true;
-        },
-        undefined,
-        undefined,
-        saberCollider.current ?? undefined,
-        body,
-      );
-    }
   });
 
   return (
