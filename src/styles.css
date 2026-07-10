@@ -94,7 +94,7 @@ kbd { min-width: 5.8rem; padding: .35rem .48rem; border: 1px solid #3a4858; bord
 .completion-card { width: min(42rem, calc(100% - 3rem)); }
 .completion-card h2 { color: #f0ca5a; font-size: clamp(3.5rem, 8vw, 6rem); }
 .completion-copy { margin: 0 auto 1rem; max-width: 30rem; color: #91a0af; line-height: 1.6; }
-.mission-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin: .6rem 0 1rem; border-block: 1px solid #293743; }
+.mission-stats { display: grid; grid-template-columns: repeat(4, 1fr); margin: .6rem 0 1rem; border-block: 1px solid #293743; }
 .mission-stats > div { display: grid; gap: .4rem; padding: 1.2rem .8rem; }
 .mission-stats > div + div { border-left: 1px solid #293743; }
 .mission-stats span { color: #718398; font-size: .58rem; letter-spacing: .16em; }

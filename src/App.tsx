@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { ProceduralAudio, type SoundCue } from "./game/audio";
-import { createSession, sessionReducer } from "./game/session";
+import { createSession, formatMissionTime, sessionReducer } from "./game/session";
 
 const GameScene = lazy(() =>
   import("./game/GameScene").then((module) => ({ default: module.GameScene })),
@@ -34,18 +34,18 @@ export function App() {
 
   const startMission = useCallback(() => {
     void audio.start().catch(() => undefined);
-    dispatch({ type: "START_MISSION" });
+    dispatch({ type: "START_MISSION", nowMs: performance.now() });
   }, [audio]);
 
   const pause = useCallback(() => {
     if (screen !== "playing") return;
     void audio.suspend().catch(() => undefined);
-    dispatch({ type: "PAUSE" });
+    dispatch({ type: "PAUSE", nowMs: performance.now() });
   }, [audio, screen]);
 
   const resume = useCallback(() => {
     void audio.resume().catch(() => undefined);
-    dispatch({ type: "RESUME" });
+    dispatch({ type: "RESUME", nowMs: performance.now() });
   }, [audio]);
 
   useEffect(() => {
@@ -211,6 +211,7 @@ export function App() {
                 The Separatist signal is down. Republic fleet positions are secure.
               </p>
               <div className="mission-stats">
+                <div><span>MISSION TIME</span><b>{formatMissionTime(session.missionTimer.completedInMs)}</b></div>
                 <div><span>FINAL LEVEL</span><b>{session.player.level}</b></div>
                 <div><span>EXPERIENCE</span><b>{session.player.xp} XP</b></div>
                 <div><span>ENEMIES DEFEATED</span><b>{session.enemiesDefeated}</b></div>

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createSession, sessionReducer, type GameSession } from "./session";
+import {
+  createSession,
+  formatMissionTime,
+  sessionReducer,
+  type GameSession,
+} from "./session";
 
 function activeSession(): GameSession {
   return { ...createSession("playing"), activeEncounter: 3 };
@@ -18,7 +23,7 @@ describe("game session", () => {
       beaconDisabled: true,
     };
 
-    const started = sessionReducer(dirty, { type: "START_MISSION" });
+    const started = sessionReducer(dirty, { type: "START_MISSION", nowMs: 1_000 });
 
     expect(started.screen).toBe("playing");
     expect(started.runId).toBe(5);
@@ -32,6 +37,8 @@ describe("game session", () => {
     });
     expect(started.enemies.filter((enemy) => enemy.kind === "b1")).toHaveLength(8);
     expect(started.enemies.filter((enemy) => enemy.kind === "b2")).toHaveLength(1);
+    expect(started.enemies.filter((enemy) => enemy.kind === "b1").every((enemy) => enemy.maxHealth === 85)).toBe(true);
+    expect(started.enemies.find((enemy) => enemy.kind === "b2")?.maxHealth).toBe(340);
     expect(started.enemies.every((enemy) => enemy.alive)).toBe(true);
     expect(started.enemiesDefeated).toBe(0);
     expect(started.beaconDisabled).toBe(false);
@@ -77,14 +84,14 @@ describe("game session", () => {
   });
 
   it("prevents beacon shutdown until the guardian is defeated", () => {
-    const blocked = sessionReducer(activeSession(), { type: "DISABLE_BEACON" });
+    const blocked = sessionReducer(activeSession(), { type: "DISABLE_BEACON", nowMs: 1_000 });
     expect(blocked.beaconDisabled).toBe(false);
 
     let cleared = activeSession();
     cleared = defeatEnemy(cleared, "b2-guardian");
     expect(cleared.objective).toBe("Disable the communications beacon");
 
-    const complete = sessionReducer(cleared, { type: "DISABLE_BEACON" });
+    const complete = sessionReducer(cleared, { type: "DISABLE_BEACON", nowMs: 2_000 });
     expect(complete.screen).toBe("complete");
     expect(complete.beaconDisabled).toBe(true);
     expect(complete.objective).toBe("Mission complete");
@@ -109,7 +116,7 @@ describe("game session", () => {
       comboStep: 2,
     });
 
-    session = sessionReducer(session, { type: "PAUSE" });
+    session = sessionReducer(session, { type: "PAUSE", nowMs: 1_000 });
     expect(session.player.combat).toEqual({
       attacking: false,
       blocking: false,
@@ -117,7 +124,7 @@ describe("game session", () => {
       comboStep: 0,
     });
 
-    session = sessionReducer(session, { type: "START_MISSION" });
+    session = sessionReducer(session, { type: "START_MISSION", nowMs: 2_000 });
     expect(session.player.combat).toEqual({
       attacking: false,
       blocking: false,
@@ -138,5 +145,20 @@ describe("game session", () => {
 
     expect(sessionReducer(blocking, { type: "DAMAGE_PLAYER", amount: 10 })).toBe(blocking);
     expect(sessionReducer(dodging, { type: "DAMAGE_PLAYER", amount: 10 })).toBe(dodging);
+  });
+
+  it("records active mission time while excluding time spent paused", () => {
+    let session = sessionReducer(createSession(), { type: "START_MISSION", nowMs: 1_000 });
+    session = sessionReducer(session, { type: "PAUSE", nowMs: 11_000 });
+    session = sessionReducer(session, { type: "RESUME", nowMs: 16_000 });
+    session = defeatEnemy({ ...session, activeEncounter: 3 }, "b2-guardian");
+    session = sessionReducer(session, { type: "DISABLE_BEACON", nowMs: 31_000 });
+
+    expect(session.missionTimer.completedInMs).toBe(25_000);
+    expect(formatMissionTime(session.missionTimer.completedInMs)).toBe("00:25");
+  });
+
+  it("formats completion times beyond one minute", () => {
+    expect(formatMissionTime(125_900)).toBe("02:05");
   });
 });
