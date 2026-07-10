@@ -228,6 +228,30 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
     else enemyBodies.current.delete(enemyId);
   }, []);
 
+  const getAssistedEnemyId = useCallback(
+    (range: number) => {
+      const player = playerRef.current;
+      if (!player) return null;
+      const playerPosition = player.translation();
+      let nearest: { id: string; distance: number } | null = null;
+      for (const enemy of session.enemies) {
+        if (!enemy.alive || enemy.encounter > session.activeEncounter) continue;
+        const body = enemyBodies.current.get(enemy.id);
+        if (!body) continue;
+        const position = body.translation();
+        const distance = Math.hypot(
+          position.x - playerPosition.x,
+          position.z - playerPosition.z,
+        );
+        if (distance <= range && (!nearest || distance < nearest.distance)) {
+          nearest = { id: enemy.id, distance };
+        }
+      }
+      return nearest?.id ?? null;
+    },
+    [session.activeEncounter, session.enemies],
+  );
+
   const removeProjectile = useCallback((id: number) => {
     window.setTimeout(
       () => setProjectiles((current) => current.filter((projectile) => projectile.id !== id)),
@@ -346,8 +370,8 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             blockingRef={blockingRef}
             invulnerableRef={invulnerableRef}
             lockedTargetRef={lockedTargetRef}
-            lockedTargetId={session.lockedTargetId}
             controlLockUntilRef={controlLockUntilRef}
+            getAssistedEnemyId={getAssistedEnemyId}
             onSound={onSound}
             onEnemyHit={damageEnemy}
             onCombatStateChange={updateCombatState}

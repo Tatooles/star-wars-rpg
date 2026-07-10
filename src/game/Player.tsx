@@ -23,8 +23,8 @@ type PlayerProps = {
   blockingRef: RefObject<boolean>;
   invulnerableRef: RefObject<boolean>;
   lockedTargetRef: RefObject<RapierRigidBody | null>;
-  lockedTargetId: string | null;
   controlLockUntilRef: RefObject<number>;
+  getAssistedEnemyId: (range: number) => string | null;
   onEnemyHit: (enemyId: string, damage: number) => void;
   onCombatStateChange: (combat: PlayerCombatState) => void;
   onSound: (cue: SoundCue) => void;
@@ -39,8 +39,8 @@ export function Player({
   blockingRef,
   invulnerableRef,
   lockedTargetRef,
-  lockedTargetId,
   controlLockUntilRef,
+  getAssistedEnemyId,
   onEnemyHit,
   onCombatStateChange,
   onSound,
@@ -181,18 +181,8 @@ export function Player({
       attackTime.current = attackDuration.current;
       hitThisSwing.current.clear();
       onSound((`swing${comboStep.current + 1}`) as SoundCue);
-      const assistedTarget = lockedTargetRef.current;
-      if (assistedTarget) {
-        const playerPosition = body.translation();
-        const targetPosition = assistedTarget.translation();
-        const targetDistance = Math.hypot(
-          targetPosition.x - playerPosition.x,
-          targetPosition.z - playerPosition.z,
-        );
-        if (targetDistance <= PLAYER_TUNING.targetAssistRange) {
-          resolveEnemyHit(lockedTargetId ? `enemy-${lockedTargetId}` : undefined);
-        }
-      }
+      const assistedEnemyId = getAssistedEnemyId(PLAYER_TUNING.targetAssistRange);
+      resolveEnemyHit(assistedEnemyId ? `enemy-${assistedEnemyId}` : undefined);
     }
     lastAttackPress.current = input.attackPresses;
     attackTime.current = Math.max(0, attackTime.current - delta);
