@@ -1,3 +1,5 @@
+import { B1_TUNING, B2_TUNING } from "./combatTuning";
+
 export type ScreenState = "title" | "playing" | "paused" | "defeated" | "complete";
 export type EnemyKind = "b1" | "b2";
 export type Objective =
@@ -21,6 +23,13 @@ export type PlayerCombatState = {
   blocking: boolean;
   dodging: boolean;
   comboStep: 0 | 1 | 2;
+};
+
+type MissionTimer = {
+  startedAtMs: number | null;
+  pausedAtMs: number | null;
+  pausedDurationMs: number;
+  completedInMs: number | null;
 };
 
 export const IDLE_COMBAT_STATE: PlayerCombatState = {
@@ -48,19 +57,20 @@ export type GameSession = {
   beaconDisabled: boolean;
   enemiesDefeated: number;
   levelUpCount: number;
+  missionTimer: MissionTimer;
 };
 
 export type SessionAction =
-  | { type: "START_MISSION" }
-  | { type: "PAUSE" }
-  | { type: "RESUME" }
+  | { type: "START_MISSION"; nowMs: number }
+  | { type: "PAUSE"; nowMs: number }
+  | { type: "RESUME"; nowMs: number }
   | { type: "ACTIVATE_ENCOUNTER"; encounter: 1 | 2 | 3 }
   | { type: "DAMAGE_PLAYER"; amount: number }
   | { type: "SET_COMBAT_STATE"; combat: PlayerCombatState }
   | { type: "DAMAGE_ENEMY"; enemyId: string; amount: number }
   | { type: "TOGGLE_LOCK"; enemyId: string | null }
   | { type: "CLEAR_LOCK"; targetId: string }
-  | { type: "DISABLE_BEACON" };
+  | { type: "DISABLE_BEACON"; nowMs: number };
 
 const b1Positions: Array<[number, number, number]> = [
   [-3.8, 1.2, 8.5],
@@ -78,8 +88,8 @@ function createEnemies(): EnemyState[] {
     id: `b1-${index + 1}`,
     kind: "b1",
     encounter: index < 4 ? 1 : 2,
-    health: 55,
-    maxHealth: 55,
+    health: B1_TUNING.maxHealth,
+    maxHealth: B1_TUNING.maxHealth,
     alive: true,
     position,
   }));
@@ -89,8 +99,8 @@ function createEnemies(): EnemyState[] {
       id: "b2-guardian",
       kind: "b2",
       encounter: 3,
-      health: 220,
-      maxHealth: 220,
+      health: B2_TUNING.maxHealth,
+      maxHealth: B2_TUNING.maxHealth,
       alive: true,
       position: [0, 1.55, -38],
     },
@@ -116,7 +126,21 @@ export function createSession(screen: ScreenState = "title", runId = 0): GameSes
     beaconDisabled: false,
     enemiesDefeated: 0,
     levelUpCount: 0,
+    missionTimer: {
+      startedAtMs: null,
+      pausedAtMs: null,
+      pausedDurationMs: 0,
+      completedInMs: null,
+    },
   };
+}
+
+export function formatMissionTime(elapsedMs: number | null) {
+  if (elapsedMs === null) return "--:--";
+  const totalSeconds = Math.floor(elapsedMs / 1_000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function progressionForXp(xp: number) {
@@ -128,17 +152,44 @@ function progressionForXp(xp: number) {
 export function sessionReducer(session: GameSession, action: SessionAction): GameSession {
   switch (action.type) {
     case "START_MISSION":
-      return createSession("playing", session.runId + 1);
+      return {
+        ...createSession("playing", session.runId + 1),
+        missionTimer: {
+          startedAtMs: action.nowMs,
+          pausedAtMs: null,
+          pausedDurationMs: 0,
+          completedInMs: null,
+        },
+      };
     case "PAUSE":
       return session.screen === "playing"
         ? {
             ...session,
             screen: "paused",
             player: { ...session.player, combat: { ...IDLE_COMBAT_STATE } },
+            missionTimer: {
+              ...session.missionTimer,
+              pausedAtMs:
+                session.missionTimer.startedAtMs === null ? null : action.nowMs,
+            },
           }
         : session;
     case "RESUME":
-      return session.screen === "paused" ? { ...session, screen: "playing" } : session;
+      return session.screen === "paused"
+        ? {
+            ...session,
+            screen: "playing",
+            missionTimer: {
+              ...session.missionTimer,
+              pausedAtMs: null,
+              pausedDurationMs:
+                session.missionTimer.pausedDurationMs +
+                (session.missionTimer.pausedAtMs === null
+                  ? 0
+                  : Math.max(0, action.nowMs - session.missionTimer.pausedAtMs)),
+            },
+          }
+        : session;
     case "ACTIVATE_ENCOUNTER": {
       if (session.screen !== "playing" || action.encounter <= session.activeEncounter) return session;
       return {
@@ -227,6 +278,18 @@ export function sessionReducer(session: GameSession, action: SessionAction): Gam
         objective: "Mission complete",
         beaconDisabled: true,
         lockedTargetId: null,
+        missionTimer: {
+          ...session.missionTimer,
+          completedInMs:
+            session.missionTimer.startedAtMs === null
+              ? null
+              : Math.max(
+                  0,
+                  action.nowMs -
+                    session.missionTimer.startedAtMs -
+                    session.missionTimer.pausedDurationMs,
+                ),
+        },
       };
     }
   }

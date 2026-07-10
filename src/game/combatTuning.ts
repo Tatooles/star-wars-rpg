@@ -13,6 +13,7 @@ export const PLAYER_TUNING = {
 } as const;
 
 export const B1_TUNING = {
+  maxHealth: 85,
   initialFireDelay: 1.8,
   initialFireDelayStep: 0.55,
   telegraphDuration: 0.42,
@@ -24,13 +25,14 @@ export const B1_TUNING = {
 } as const;
 
 export const B2_TUNING = {
+  maxHealth: 340,
   initialBurstCooldown: 1.4,
   burstCooldown: 3.4,
   burstShots: 3,
   burstSpacing: 0.22,
   meleeCooldown: 2.35,
   meleeRange: 2.7,
-  meleeDamage: 10,
+  meleeDamage: 18,
   reflectedDamageCap: 55,
   hitRecovery: 0.3,
 } as const;
@@ -41,6 +43,6 @@ export const PROJECTILE_TUNING = {
   lifetime: 5,
   reflectedFallbackHitDelay: 0.22,
   reflectedDamage: 100,
-  b1Damage: 2,
-  b2Damage: 4,
+  b1Damage: 7,
+  b2Damage: 12,
 } as const;

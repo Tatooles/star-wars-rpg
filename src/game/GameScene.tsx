@@ -162,7 +162,9 @@ function MissionDirector({
 
     const interactPressed = controls.current.interactPresses !== lastInteractPress.current;
     lastInteractPress.current = controls.current.interactPresses;
-    if (interactPressed && nearBeacon) dispatch({ type: "DISABLE_BEACON" });
+    if (interactPressed && nearBeacon) {
+      dispatch({ type: "DISABLE_BEACON", nowMs: performance.now() });
+    }
 
     const lockedBody = session.lockedTargetId
       ? enemyBodies.current.get(session.lockedTargetId) ?? null
