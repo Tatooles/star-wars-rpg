@@ -358,7 +358,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
           shadow-camera-bottom={-34}
         />
         <pointLight color="#ef713c" intensity={22} distance={48} position={[-16, 4, -44]} />
-        <Physics paused={!playing} gravity={[0, -20, 0]} timeStep="vary">
+        <Physics paused={!playing} gravity={[0, -20, 0]}>
           <Outpost />
           <Beacon disabled={session.beaconDisabled} />
           <Player
