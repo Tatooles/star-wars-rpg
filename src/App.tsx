@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { GameScene } from "./game/GameScene";
 
 type Screen = "title" | "playing" | "paused";
 
@@ -89,8 +90,9 @@ export function App() {
           </section>
         )}
 
-        {screen === "playing" && (
+        {(screen === "playing" || screen === "paused") && (
           <section className="game-placeholder" aria-label="Mission in progress">
+            <GameScene playing={screen === "playing"} />
             <p className="objective-label">CURRENT OBJECTIVE</p>
             <p>Reach the Separatist beacon</p>
             <div className="reticle" aria-hidden="true" />
