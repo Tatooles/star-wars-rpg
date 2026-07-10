@@ -153,6 +153,7 @@ export function B1Droid({
         />
       </group>
       <EnemyIndicator
+        bodyRef={bodyRef}
         enemy={enemy}
         locked={locked}
       />

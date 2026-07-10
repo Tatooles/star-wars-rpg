@@ -1,8 +1,14 @@
 import { Billboard } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import type { RapierRigidBody } from "@react-three/rapier";
+import { type RefObject, useRef } from "react";
+import * as THREE from "three";
 import { getHealthBarLayout } from "./enemyIndicatorModel";
+import { getEnemyIndicatorGroundOffset } from "./outpostGround";
 import type { EnemyKind, EnemyState } from "./session";
 
 type EnemyIndicatorProps = {
+  bodyRef: RefObject<RapierRigidBody | null>;
   enemy: EnemyState;
   locked: boolean;
   showHealthBar?: boolean;
@@ -11,7 +17,6 @@ type EnemyIndicatorProps = {
 type EnemyIndicatorLayout = {
   barPositionY: number;
   barWidth: number;
-  groundPositionY: number;
   ringRadius: number;
 };
 
@@ -19,24 +24,36 @@ const layouts: Record<EnemyKind, EnemyIndicatorLayout> = {
   b1: {
     barPositionY: 2.3,
     barWidth: 1.05,
-    groundPositionY: -1.14,
     ringRadius: 0.68,
   },
   b2: {
     barPositionY: 2.7,
     barWidth: 1.35,
-    groundPositionY: -1.49,
     ringRadius: 0.98,
   },
 };
 
 export function EnemyIndicator({
+  bodyRef,
   enemy,
   locked,
   showHealthBar = true,
 }: EnemyIndicatorProps) {
-  const { barPositionY, barWidth, groundPositionY, ringRadius } = layouts[enemy.kind];
+  const ringRef = useRef<THREE.Mesh>(null);
+  const { barPositionY, barWidth, ringRadius } = layouts[enemy.kind];
   const { fill, centerX } = getHealthBarLayout(enemy.health, enemy.maxHealth);
+  const initialGroundPositionY = getEnemyIndicatorGroundOffset({
+    x: enemy.position[0],
+    y: enemy.position[1],
+    z: enemy.position[2],
+  });
+
+  useFrame(() => {
+    if (!locked || !ringRef.current) return;
+    const bodyPosition = bodyRef.current?.translation();
+    if (!bodyPosition) return;
+    ringRef.current.position.y = getEnemyIndicatorGroundOffset(bodyPosition);
+  });
 
   return (
     <>
@@ -64,7 +81,8 @@ export function EnemyIndicator({
 
       {locked && (
         <mesh
-          position={[0, groundPositionY, 0]}
+          ref={ringRef}
+          position={[0, initialGroundPositionY, 0]}
           rotation={[-Math.PI / 2, 0, 0]}
           renderOrder={9}
         >

@@ -140,6 +140,7 @@ export function B2Droid({
         <pointLight ref={muzzleFlash} color="#ff3c1f" intensity={0} distance={5} position={[0.68, 0.9, 0.9]} />
       </group>
       <EnemyIndicator
+        bodyRef={bodyRef}
         enemy={enemy}
         locked={locked}
         showHealthBar={!active}
