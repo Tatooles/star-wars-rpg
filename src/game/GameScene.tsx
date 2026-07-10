@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { CuboidCollider, Physics, RapierRigidBody, RigidBody, useRapier } from "@react-three/rapier";
+import { CuboidCollider, Physics, RapierRigidBody, RigidBody } from "@react-three/rapier";
 import {
   Dispatch,
   MutableRefObject,
@@ -55,12 +55,12 @@ function MissionDirector({
   dispatch,
   setBeaconNearby,
 }: MissionDirectorProps) {
-  const { camera } = useThree();
-  const { world, rapier } = useRapier();
+  const { camera, scene } = useThree();
   const lastLockPress = useRef(0);
   const lastInteractPress = useRef(0);
   const wasNearBeacon = useRef(false);
   const lineOfSightLostFor = useRef(0);
+  const lineOfSightRay = useRef(new THREE.Raycaster());
 
   useFrame((_, delta) => {
     if (session.screen !== "playing") {
@@ -119,7 +119,11 @@ function MissionDirector({
       } else {
         const position = lockedBody.translation();
         const distance = Math.hypot(position.x - playerPosition.x, position.z - playerPosition.z);
-        const origin = { x: playerPosition.x, y: playerPosition.y + 0.65, z: playerPosition.z };
+        const origin = new THREE.Vector3(
+          playerPosition.x,
+          playerPosition.y + 0.65,
+          playerPosition.z,
+        );
         const direction = new THREE.Vector3(
           position.x - origin.x,
           position.y + 0.7 - origin.y,
@@ -127,17 +131,19 @@ function MissionDirector({
         );
         const rayDistance = direction.length();
         direction.normalize();
-        const hit = world.castRay(
-          new rapier.Ray(origin, direction),
-          rayDistance,
-          true,
-          undefined,
-          undefined,
-          undefined,
-          player,
-          (collider) => !collider.isSensor(),
-        );
-        const visible = !hit || hit.collider.parent()?.handle === lockedBody.handle;
+        lineOfSightRay.current.set(origin, direction);
+        lineOfSightRay.current.far = rayDistance;
+        const obstruction = lineOfSightRay.current
+          .intersectObjects(scene.children, true)
+          .find((hit) => {
+            let object: THREE.Object3D | null = hit.object;
+            while (object) {
+              if (object.userData.cameraObstacle) return true;
+              object = object.parent;
+            }
+            return false;
+          });
+        const visible = !obstruction;
         lineOfSightLostFor.current = visible ? 0 : lineOfSightLostFor.current + delta;
         if (distance > 28 || lineOfSightLostFor.current > 1.1) {
           dispatch({ type: "CLEAR_LOCK", targetId: session.lockedTargetId });
