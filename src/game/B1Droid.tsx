@@ -5,6 +5,9 @@ import * as THREE from "three";
 import type { EnemyState } from "./session";
 import { B1_TUNING } from "./combatTuning";
 import { EnemyIndicator } from "./EnemyIndicator";
+import { GAME_ASSETS, type B1Clip } from "./assetManifest";
+import { ImportedCharacter, type ImportedCharacterHandle } from "./ImportedCharacter";
+import { getEnemyPresentation } from "./enemyPresentation";
 
 export type ProjectileSpawn = {
   position: THREE.Vector3;
@@ -21,9 +24,6 @@ type B1DroidProps = {
   registerBody: (enemyId: string, body: RapierRigidBody | null) => void;
   onFire: (spawn: ProjectileSpawn) => void;
 };
-
-const tan = new THREE.MeshStandardMaterial({ color: "#b7a27b", roughness: 0.78, metalness: 0.12 });
-const dark = new THREE.MeshStandardMaterial({ color: "#2a2d2b", roughness: 0.55, metalness: 0.4 });
 
 export function B1Droid({
   enemy,
@@ -45,21 +45,38 @@ export function B1Droid({
   const lastHealth = useRef(enemy.health);
   const hitReaction = useRef(0);
   const model = useRef<THREE.Group>(null);
+  const imported = useRef<ImportedCharacterHandle>(null);
+  const desiredClip = useRef<B1Clip>("Idle");
+  const defeatedFor = useRef(0);
+  const fireAnimationFor = useRef(0);
   const telegraphLight = useRef<THREE.PointLight>(null);
 
   useFrame((_, delta) => {
     const body = bodyRef.current;
     const player = playerRef.current;
-    registerBody(enemy.id, enemy.alive ? body : null);
+    if (!enemy.alive) defeatedFor.current += delta;
+    else defeatedFor.current = 0;
+    const presentation = getEnemyPresentation(enemy.alive, defeatedFor.current);
+    registerBody(enemy.id, presentation.registerTarget ? body : null);
+    if (model.current) model.current.visible = presentation.visible;
+    if (!enemy.alive) {
+      desiredClip.current = "Defeat";
+      return;
+    }
     if (enemy.health < lastHealth.current) hitReaction.current = B1_TUNING.hitRecovery;
     lastHealth.current = enemy.health;
     hitReaction.current = Math.max(0, hitReaction.current - delta);
     if (model.current) {
-      model.current.position.y = Math.sin(performance.now() * 0.004) * 0.025;
       model.current.rotation.z = hitReaction.current > 0
         ? Math.sin(hitReaction.current * 42) * 0.14
         : 0;
     }
+    fireAnimationFor.current = Math.max(0, fireAnimationFor.current - delta);
+    desiredClip.current = hitReaction.current > 0
+      ? "Hit"
+      : fireAnimationFor.current > 0
+        ? "Fire"
+        : "Idle";
     if (!body || !player || !playing || !active || !enemy.alive) return;
     if (hitReaction.current > 0) return;
     const position = body.translation();
@@ -89,6 +106,7 @@ export function B1Droid({
     next.x = THREE.MathUtils.clamp(next.x, -4.8, 4.8);
     next.z = Math.max(next.z, encounterBoundary);
     body.setNextKinematicTranslation(next);
+    if (move.lengthSq() > 0.01 && fireAnimationFor.current <= 0) desiredClip.current = "Move";
     const yaw = Math.atan2(towardPlayer.x, towardPlayer.z);
     body.setNextKinematicRotation(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw));
 
@@ -98,8 +116,10 @@ export function B1Droid({
     }
     if (fireTimer.current <= 0) {
       const muzzle = new THREE.Vector3(position.x, position.y + 1.1, position.z).addScaledVector(towardPlayer, 0.7);
+      imported.current?.getAttachmentWorldPosition("Muzzle_B1", muzzle);
       const target = new THREE.Vector3(playerPosition.x, playerPosition.y + 0.2, playerPosition.z);
       onFire({ position: muzzle, direction: target.sub(muzzle).normalize(), sourceId: enemy.id });
+      fireAnimationFor.current = 0.48;
       fireTimer.current = B1_TUNING.fireCooldown + Math.random() * B1_TUNING.fireCooldownVariance;
       telegraph.current = 0;
       if (Math.random() > 0.68) orbitDirection.current *= -1;
@@ -110,8 +130,6 @@ export function B1Droid({
     }
   });
 
-  if (!enemy.alive) return null;
-
   return (
     <RigidBody
       ref={bodyRef}
@@ -120,30 +138,9 @@ export function B1Droid({
       position={enemy.position}
       name={`enemy-${enemy.id}`}
     >
-      <CapsuleCollider args={[0.52, 0.38]} position={[0, 0.2, 0]} />
+      {enemy.alive && <CapsuleCollider args={[0.52, 0.38]} position={[0, 0.2, 0]} />}
       <group ref={model}>
-        <mesh material={tan} position={[0, 1.55, 0]} castShadow>
-          <boxGeometry args={[0.46, 0.42, 0.38]} />
-        </mesh>
-        <mesh material={dark} position={[0, 1.58, 0.22]} castShadow>
-          <boxGeometry args={[0.24, 0.08, 0.12]} />
-        </mesh>
-        <mesh material={tan} position={[0, 0.75, 0]} castShadow>
-          <boxGeometry args={[0.42, 0.82, 0.3]} />
-        </mesh>
-        {[-1, 1].map((side) => (
-          <group key={side}>
-            <mesh material={tan} position={[side * 0.34, 0.82, 0]} rotation={[0, 0, side * 0.08]} castShadow>
-              <capsuleGeometry args={[0.065, 0.72, 4, 6]} />
-            </mesh>
-            <mesh material={tan} position={[side * 0.16, -0.05, 0]} castShadow>
-              <capsuleGeometry args={[0.075, 0.9, 4, 6]} />
-            </mesh>
-          </group>
-        ))}
-        <mesh material={dark} position={[0.4, 0.82, 0.35]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-          <cylinderGeometry args={[0.08, 0.12, 0.85, 7]} />
-        </mesh>
+        <ImportedCharacter ref={imported} url={GAME_ASSETS.b1} desiredClip={desiredClip} />
         <pointLight
           ref={telegraphLight}
           color="#5e160d"
