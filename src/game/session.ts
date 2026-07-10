@@ -59,7 +59,7 @@ export type SessionAction =
   | { type: "SET_COMBAT_STATE"; combat: PlayerCombatState }
   | { type: "DAMAGE_ENEMY"; enemyId: string; amount: number }
   | { type: "TOGGLE_LOCK"; enemyId: string | null }
-  | { type: "CLEAR_LOCK" }
+  | { type: "CLEAR_LOCK"; targetId: string }
   | { type: "DISABLE_BEACON" };
 
 const b1Positions: Array<[number, number, number]> = [
@@ -215,7 +215,9 @@ export function sessionReducer(session: GameSession, action: SessionAction): Gam
         lockedTargetId: session.lockedTargetId === action.enemyId ? null : action.enemyId,
       };
     case "CLEAR_LOCK":
-      return session.lockedTargetId === null ? session : { ...session, lockedTargetId: null };
+      return session.lockedTargetId !== action.targetId
+        ? session
+        : { ...session, lockedTargetId: null };
     case "DISABLE_BEACON": {
       const guardian = session.enemies.find((enemy) => enemy.kind === "b2");
       if (session.screen !== "playing" || guardian?.alive || session.beaconDisabled) return session;

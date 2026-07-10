@@ -49,6 +49,15 @@ describe("game session", () => {
     expect(duplicate).toBe(defeated);
   });
 
+  it("does not let a stale clear remove a newer target lock", () => {
+    let session = sessionReducer(activeSession(), { type: "TOGGLE_LOCK", enemyId: "b1-1" });
+    session = sessionReducer(session, { type: "TOGGLE_LOCK", enemyId: "b1-2" });
+
+    const afterStaleClear = sessionReducer(session, { type: "CLEAR_LOCK", targetId: "b1-1" });
+
+    expect(afterStaleClear.lockedTargetId).toBe("b1-2");
+  });
+
   it("levels at exactly 75 and 175 XP without a full heal", () => {
     let session = activeSession();
     session = sessionReducer(session, { type: "DAMAGE_PLAYER", amount: 30 });

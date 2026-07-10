@@ -115,7 +115,7 @@ function MissionDirector({
     if (session.lockedTargetId) {
       const lockedEnemy = session.enemies.find((enemy) => enemy.id === session.lockedTargetId);
       if (!lockedEnemy?.alive || !lockedBody) {
-        dispatch({ type: "CLEAR_LOCK" });
+        dispatch({ type: "CLEAR_LOCK", targetId: session.lockedTargetId });
       } else {
         const position = lockedBody.translation();
         const distance = Math.hypot(position.x - playerPosition.x, position.z - playerPosition.z);
@@ -139,7 +139,9 @@ function MissionDirector({
         );
         const visible = !hit || hit.collider.parent()?.handle === lockedBody.handle;
         lineOfSightLostFor.current = visible ? 0 : lineOfSightLostFor.current + delta;
-        if (distance > 28 || lineOfSightLostFor.current > 1.1) dispatch({ type: "CLEAR_LOCK" });
+        if (distance > 28 || lineOfSightLostFor.current > 1.1) {
+          dispatch({ type: "CLEAR_LOCK", targetId: session.lockedTargetId });
+        }
       }
     } else {
       lineOfSightLostFor.current = 0;
@@ -149,7 +151,7 @@ function MissionDirector({
     lastLockPress.current = controls.current.lockPresses;
     if (!lockPressed) return;
     if (session.lockedTargetId) {
-      dispatch({ type: "CLEAR_LOCK" });
+      dispatch({ type: "CLEAR_LOCK", targetId: session.lockedTargetId });
       return;
     }
 
