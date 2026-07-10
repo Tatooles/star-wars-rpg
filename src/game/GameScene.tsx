@@ -207,11 +207,18 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
   const [impacts, setImpacts] = useState<ImpactState[]>([]);
   const [beaconNearby, setBeaconNearby] = useState(false);
 
-  const updateCombatState = useCallback(
-    (combat: PlayerCombatState) => {
-      window.setTimeout(() => dispatch({ type: "SET_COMBAT_STATE", combat }), 0);
+  const dispatchSession = useCallback(
+    (action: SessionAction) => {
+      window.setTimeout(() => dispatch(action), 0);
     },
     [dispatch],
+  );
+
+  const updateCombatState = useCallback(
+    (combat: PlayerCombatState) => {
+      dispatchSession({ type: "SET_COMBAT_STATE", combat });
+    },
+    [dispatchSession],
   );
 
   const registerEnemyBody = useCallback((enemyId: string, body: RapierRigidBody | null) => {
@@ -220,40 +227,44 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
   }, []);
 
   const removeProjectile = useCallback((id: number) => {
-    setProjectiles((current) => current.filter((projectile) => projectile.id !== id));
+    window.setTimeout(
+      () => setProjectiles((current) => current.filter((projectile) => projectile.id !== id)),
+      0,
+    );
   }, []);
 
   const spawnProjectile = useCallback((spawn: ProjectileSpawn) => {
     onSound("blaster");
     const id = nextProjectileId.current++;
-    setProjectiles((current) => [
-      ...current,
-      {
-        id,
-        sourceId: spawn.sourceId,
-        position: spawn.position.toArray(),
-        direction: spawn.direction.toArray(),
-        reflected: false,
-      },
-    ]);
+    const projectile: ProjectileState = {
+      id,
+      sourceId: spawn.sourceId,
+      position: spawn.position.toArray(),
+      direction: spawn.direction.toArray(),
+      reflected: false,
+    };
+    window.setTimeout(() => setProjectiles((current) => [...current, projectile]), 0);
   }, [onSound]);
 
   const reflectProjectile = useCallback(
     (id: number, projectilePosition: [number, number, number]) => {
       onSound("reflect");
-      setProjectiles((current) =>
-        current.map((projectile) => {
-          if (projectile.id !== id) return projectile;
-          const enemyBody = enemyBodies.current.get(projectile.sourceId);
-          if (!enemyBody) return projectile;
-          const enemyPosition = enemyBody.translation();
-          const direction = new THREE.Vector3(
-            enemyPosition.x - projectilePosition[0],
-            enemyPosition.y + 0.5 - projectilePosition[1],
-            enemyPosition.z - projectilePosition[2],
-          ).normalize();
-          return { ...projectile, reflected: true, direction: direction.toArray() };
-        }),
+      window.setTimeout(
+        () => setProjectiles((current) =>
+          current.map((projectile) => {
+            if (projectile.id !== id) return projectile;
+            const enemyBody = enemyBodies.current.get(projectile.sourceId);
+            if (!enemyBody) return projectile;
+            const enemyPosition = enemyBody.translation();
+            const direction = new THREE.Vector3(
+              enemyPosition.x - projectilePosition[0],
+              enemyPosition.y + 0.5 - projectilePosition[1],
+              enemyPosition.z - projectilePosition[2],
+            ).normalize();
+            return { ...projectile, reflected: true, direction: direction.toArray() };
+          }),
+        ),
+        0,
       );
     },
     [onSound],
@@ -266,19 +277,17 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
       if (enemy?.alive && body) {
         const position = body.translation();
         const impactId = nextImpactId.current++;
-        setImpacts((current) => [
-          ...current,
-          {
-            id: impactId,
-            position: [position.x, position.y + 0.8, position.z],
-            destructive: amount >= enemy.health,
-          },
-        ]);
+        const impact: ImpactState = {
+          id: impactId,
+          position: [position.x, position.y + 0.8, position.z],
+          destructive: amount >= enemy.health,
+        };
+        window.setTimeout(() => setImpacts((current) => [...current, impact]), 0);
       }
       onSound("impact");
-      dispatch({ type: "DAMAGE_ENEMY", enemyId, amount });
+      dispatchSession({ type: "DAMAGE_ENEMY", enemyId, amount });
     },
-    [dispatch, onSound, session.enemies],
+    [dispatchSession, onSound, session.enemies],
   );
 
   const encounterOneAlive = session.enemies.some((enemy) => enemy.encounter === 1 && enemy.alive);
@@ -363,7 +372,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
                     { x: direction.x * 4.5, y: 2.8, z: direction.z * 4.5 },
                     true,
                   );
-                  dispatch({ type: "DAMAGE_PLAYER", amount: B2_TUNING.meleeDamage });
+                  dispatchSession({ type: "DAMAGE_PLAYER", amount: B2_TUNING.meleeDamage });
                 }}
               />
             ),
@@ -377,7 +386,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
               invulnerableRef={invulnerableRef}
               onRemove={removeProjectile}
               onReflect={reflectProjectile}
-              onPlayerHit={(amount) => dispatch({ type: "DAMAGE_PLAYER", amount })}
+              onPlayerHit={(amount) => dispatchSession({ type: "DAMAGE_PLAYER", amount })}
               onEnemyHit={(enemyId, amount) =>
                 damageEnemy(
                   enemyId,
@@ -396,8 +405,8 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             enemyBodies={enemyBodies}
             lockedTargetRef={lockedTargetRef}
             session={session}
-            dispatch={dispatch}
-            setBeaconNearby={setBeaconNearby}
+            dispatch={dispatchSession}
+            setBeaconNearby={(nearby) => window.setTimeout(() => setBeaconNearby(nearby), 0)}
           />
         </Physics>
         {impacts.map((impact) => (
@@ -405,9 +414,10 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             key={impact.id}
             position={impact.position}
             destructive={impact.destructive}
-            onComplete={() =>
-              setImpacts((current) => current.filter((candidate) => candidate.id !== impact.id))
-            }
+            onComplete={() => window.setTimeout(
+              () => setImpacts((current) => current.filter((candidate) => candidate.id !== impact.id)),
+              0,
+            )}
           />
         ))}
         <CameraRig
