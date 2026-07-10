@@ -449,6 +449,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             cameraYaw={yawRef}
             controls={controls}
             playing={playing}
+            health={session.player.health}
             damageMultiplier={session.player.damageMultiplier}
             blockingRef={blockingRef}
             invulnerableRef={invulnerableRef}

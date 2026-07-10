@@ -6,6 +6,9 @@ import type { ProjectileSpawn } from "./B1Droid";
 import type { EnemyState } from "./session";
 import { B2_TUNING } from "./combatTuning";
 import { EnemyIndicator } from "./EnemyIndicator";
+import { GAME_ASSETS, type B2Clip } from "./assetManifest";
+import { ImportedCharacter, type ImportedCharacterHandle } from "./ImportedCharacter";
+import { getEnemyPresentation } from "./enemyPresentation";
 
 type B2DroidProps = {
   enemy: EnemyState;
@@ -17,9 +20,6 @@ type B2DroidProps = {
   onFire: (spawn: ProjectileSpawn) => void;
   onMelee: (direction: THREE.Vector3) => void;
 };
-
-const armor = new THREE.MeshStandardMaterial({ color: "#35424b", roughness: 0.42, metalness: 0.7 });
-const armorDark = new THREE.MeshStandardMaterial({ color: "#151c21", roughness: 0.5, metalness: 0.65 });
 
 export function B2Droid({
   enemy,
@@ -40,11 +40,24 @@ export function B2Droid({
   const model = useRef<THREE.Group>(null);
   const lastHealth = useRef(enemy.health);
   const hitReaction = useRef(0);
+  const imported = useRef<ImportedCharacterHandle>(null);
+  const desiredClip = useRef<B2Clip>("Idle");
+  const defeatedFor = useRef(0);
+  const burstAnimationFor = useRef(0);
+  const meleeAnimationFor = useRef(0);
 
   useFrame((_, delta) => {
     const body = bodyRef.current;
     const player = playerRef.current;
-    registerBody(enemy.id, enemy.alive ? body : null);
+    if (!enemy.alive) defeatedFor.current += delta;
+    else defeatedFor.current = 0;
+    const presentation = getEnemyPresentation(enemy.alive, defeatedFor.current);
+    registerBody(enemy.id, presentation.registerTarget ? body : null);
+    if (model.current) model.current.visible = presentation.visible;
+    if (!enemy.alive) {
+      desiredClip.current = "Defeat";
+      return;
+    }
     if (enemy.health < lastHealth.current) hitReaction.current = B2_TUNING.hitRecovery;
     lastHealth.current = enemy.health;
     hitReaction.current = Math.max(0, hitReaction.current - delta);
@@ -53,6 +66,15 @@ export function B2Droid({
         ? Math.sin(hitReaction.current * 36) * 0.1
         : 0;
     }
+    burstAnimationFor.current = Math.max(0, burstAnimationFor.current - delta);
+    meleeAnimationFor.current = Math.max(0, meleeAnimationFor.current - delta);
+    desiredClip.current = hitReaction.current > 0
+      ? "Hit"
+      : meleeAnimationFor.current > 0
+        ? "Melee"
+        : burstAnimationFor.current > 0
+          ? "BurstFire"
+          : "Idle";
     if (!body || !player || !playing || !active || !enemy.alive) return;
     if (hitReaction.current > 0) return;
     const position = body.translation();
@@ -70,6 +92,7 @@ export function B2Droid({
         y: position.y,
         z: position.z + towardPlayer.z * delta * 1.45,
       });
+      if (burstAnimationFor.current <= 0 && meleeAnimationFor.current <= 0) desiredClip.current = "Move";
     }
     body.setNextKinematicRotation(
       new THREE.Quaternion().setFromAxisAngle(
@@ -81,6 +104,7 @@ export function B2Droid({
     meleeCooldown.current = Math.max(0, meleeCooldown.current - delta);
     if (distance < B2_TUNING.meleeRange && meleeCooldown.current <= 0) {
       onMelee(towardPlayer);
+      meleeAnimationFor.current = 0.62;
       meleeCooldown.current = B2_TUNING.meleeCooldown;
     }
 
@@ -94,16 +118,16 @@ export function B2Droid({
     if (burstShots.current > 0 && burstTimer.current <= 0) {
       const muzzle = new THREE.Vector3(position.x + 0.58, position.y + 1.25, position.z)
         .addScaledVector(towardPlayer, 0.75);
+      imported.current?.getAttachmentWorldPosition("Muzzle_B2", muzzle);
       const target = new THREE.Vector3(playerPosition.x, playerPosition.y + 0.2, playerPosition.z);
       onFire({ position: muzzle, direction: target.sub(muzzle).normalize(), sourceId: enemy.id });
+      burstAnimationFor.current = 0.65;
       burstShots.current -= 1;
       burstTimer.current = B2_TUNING.burstSpacing;
       if (muzzleFlash.current) muzzleFlash.current.intensity = 12;
     }
     if (muzzleFlash.current) muzzleFlash.current.intensity *= Math.exp(-delta * 18);
   });
-
-  if (!enemy.alive) return null;
 
   return (
     <RigidBody
@@ -113,30 +137,9 @@ export function B2Droid({
       position={enemy.position}
       name={`enemy-${enemy.id}`}
     >
-      <CapsuleCollider args={[0.85, 0.68]} position={[0, 0.25, 0]} />
+      {enemy.alive && <CapsuleCollider args={[0.85, 0.68]} position={[0, 0.25, 0]} />}
       <group ref={model}>
-        <mesh material={armor} position={[0, 1.7, 0]} castShadow>
-          <boxGeometry args={[1.05, 0.72, 0.72]} />
-        </mesh>
-        <mesh material={armorDark} position={[0, 1.72, 0.39]} castShadow>
-          <boxGeometry args={[0.72, 0.18, 0.12]} />
-        </mesh>
-        <mesh material={armor} position={[0, 0.72, 0]} castShadow>
-          <cylinderGeometry args={[0.62, 0.76, 1.2, 8]} />
-        </mesh>
-        {[-1, 1].map((side) => (
-          <group key={side}>
-            <mesh material={armor} position={[side * 0.68, 1.03, 0]} rotation={[0, 0, side * 0.08]} castShadow>
-              <capsuleGeometry args={[0.18, 0.95, 5, 8]} />
-            </mesh>
-            <mesh material={armorDark} position={[side * 0.32, -0.18, 0]} castShadow>
-              <capsuleGeometry args={[0.2, 1.12, 5, 8]} />
-            </mesh>
-          </group>
-        ))}
-        <mesh material={armorDark} position={[0.68, 0.9, 0.52]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-          <cylinderGeometry args={[0.12, 0.18, 0.82, 8]} />
-        </mesh>
+        <ImportedCharacter ref={imported} url={GAME_ASSETS.b2} desiredClip={desiredClip} />
         <pointLight ref={muzzleFlash} color="#ff3c1f" intensity={0} distance={5} position={[0.68, 0.9, 0.9]} />
       </group>
       <EnemyIndicator

@@ -18,6 +18,7 @@ type PlayerProps = {
   cameraYaw: RefObject<number>;
   controls: RefObject<Controls>;
   playing: boolean;
+  health: number;
   damageMultiplier: number;
   blockingRef: RefObject<boolean>;
   invulnerableRef: RefObject<boolean>;
@@ -38,6 +39,7 @@ export function Player({
   cameraYaw,
   controls,
   playing,
+  health,
   damageMultiplier,
   blockingRef,
   invulnerableRef,
@@ -50,8 +52,11 @@ export function Player({
 }: PlayerProps) {
   const model = useRef<THREE.Group>(null);
   const moving = useRef(false);
+  const backpedaling = useRef(false);
   const lastAttackPress = useRef(0);
   const lastDodgePress = useRef(0);
+  const lastInteractPress = useRef(0);
+  const interactTime = useRef(0);
   const targetRotation = useRef(Math.PI);
   const attackTime = useRef(0);
   const attackDuration = useRef<number>(PLAYER_TUNING.attackDurations[0]);
@@ -65,6 +70,7 @@ export function Player({
     comboStep: 0,
     blocking: false,
     dodging: false,
+    interacting: false,
   });
   const reportedCombat = useRef<PlayerCombatState>({
     attacking: false,
@@ -110,6 +116,7 @@ export function Player({
     pose.current.attacking = false;
     pose.current.blocking = false;
     pose.current.dodging = false;
+    pose.current.interacting = false;
     pose.current.comboStep = 0;
     comboStep.current = 0;
     reportCombatState({ attacking: false, blocking: false, dodging: false, comboStep: 0 });
@@ -131,6 +138,7 @@ export function Player({
     });
     const velocity = body.linvel();
     moving.current = movement.speedMultiplier > 0;
+    backpedaling.current = input.backward && !input.forward;
     const movementLocked = performance.now() < controlLockUntilRef.current;
     targetRotation.current = movement.facingYaw;
 
@@ -192,6 +200,10 @@ export function Player({
     pose.current.comboStep = comboStep.current;
     pose.current.blocking = input.block && attackTime.current <= 0;
     pose.current.dodging = dodgeTime.current > 0;
+    if (input.interactPresses !== lastInteractPress.current) interactTime.current = 0.55;
+    lastInteractPress.current = input.interactPresses;
+    interactTime.current = Math.max(0, interactTime.current - delta);
+    pose.current.interacting = interactTime.current > 0;
     blockingRef.current = pose.current.blocking;
     reportCombatState({
       attacking: pose.current.attacking,
@@ -215,7 +227,12 @@ export function Player({
     >
       <CapsuleCollider args={[0.62, 0.43]} position={[0, 0.12, 0]} />
       <group ref={model}>
-        <AnakinModel moving={moving} combatPose={pose} />
+        <AnakinModel
+          moving={moving}
+          backpedaling={backpedaling}
+          combatPose={pose}
+          health={health}
+        />
       </group>
     </RigidBody>
   );
