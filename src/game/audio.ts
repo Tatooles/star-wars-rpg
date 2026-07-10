@@ -45,12 +45,10 @@ export class ProceduralAudio {
       this.noise([0.12, 0.15, 0.2][variation], 0.04, [900, 1250, 720][variation]);
     } else if (cue === "impact") {
       this.tone(95, 42, 0.18, "square", 0.1);
-      this.noise(0.11, 0.08, 420);
     } else if (cue === "blaster") {
       this.tone(540, 105, 0.12, "sawtooth", 0.06);
     } else if (cue === "reflect") {
       this.tone(320, 920, 0.16, "square", 0.075);
-      this.noise(0.08, 0.035, 1700);
     } else if (cue === "hurt") {
       this.tone(110, 62, 0.28, "sawtooth", 0.09);
     } else if (cue === "destroy") {

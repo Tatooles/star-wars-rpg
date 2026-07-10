@@ -75,6 +75,12 @@ Visual review images:
   beacon disable, mission complete, and replay. Existing suites also cover the
   three-hit combat state, block immunity, dodge immunity, target-lock cleanup,
   player defeat/restart, pause/resume, progression, timers, and beacon gating.
+- Production browser runs separately exercised keyboard movement and camera
+  turning, attack combo, block/reflection, dodge, target lock, pause/resume,
+  defeat presentation, both B1 encounter states, the B2/beacon state, mission
+  completion, and replay. The deterministic full-mission reducer trace verifies
+  that those mounted states remain connected in the required order rather than
+  relying on visual inspection alone.
 
 ## Production performance
 
@@ -83,9 +89,9 @@ memory. Viewport: 1920×1080. Production Vite preview, full local asset set.
 
 | Scenario | Average FPS | Average frame | p95 frame | Max frame | Draw calls | Triangles | Geometries | Textures | Programs |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Traversal / complete loaded scene | 69.4 | 14.4 ms | 17.8 ms | 29.4 ms | 914 | 159,750 | 260 | 3 | 7 |
-| Four-B1 sustained block/reflection | 69.2 | 14.4 ms | 17.3 ms | 22.6 ms | 920 | 159,822 | 268 | 3 | 7 |
-| B2/beacon sustained block/reflection | 93.3 | 10.7 ms | 13.3 ms | 47.0 ms | 334 | 80,296 | 245 | 3 | 9 |
+| Traversal / complete loaded scene | 64.4 | 15.5 ms | 18.3 ms | 22.8 ms | 914 | 159,750 | 260 | 3 | 7 |
+| Four-B1 sustained block/reflection | 61.8 | 16.2 ms | 17.9 ms | 19.2 ms | 929 | 160,418 | 273 | 3 | 7 |
+| B2/beacon sustained block/reflection | 80.0 | 12.5 ms | 16.1 ms | 45.1 ms | 322 | 79,968 | 235 | 3 | 8 |
 
 Each row is a production-build 240-frame telemetry window with the browser
 isolated from prior WebGL tabs. The traversal sample mounts the complete
@@ -97,12 +103,14 @@ state, and health so each scenario can be sampled continuously. Those fixture
 changes were reverted immediately after capture.
 
 The first half-second samples after a cold scenario start varied while WebGL
-programs and assets warmed (the lowest individual counter reading was 56 FPS in
-the loaded traversal scene and 59 FPS in the B2 fixture). Sustained 240-frame
-windows remained above target, geometry and texture counts stabilized, and no
-continuing shader-compilation stutter appeared. The lightweight projectile path
-uses shared geometry/material resources and direct distance checks; completed
-impact bursts hide and unregister once, preventing the earlier effect buildup.
+programs and assets warmed. Sustained 240-frame windows remained above target,
+geometry and texture counts stabilized, and no continuing shader-compilation
+stutter appeared. Projectile collision and hit detection remain on the existing
+Rapier sensors; their render meshes use shared geometry/material resources and
+an additive glow instead of a per-bolt dynamic light. Completed impact bursts
+hide and unregister once, preventing effect buildup. The Canvas caps DPR at 1.5
+and the single directional shadow map at 1024² to keep the complete scene above
+the 1080p target without changing gameplay geometry or collision fidelity.
 
 ## Browser compatibility
 
@@ -126,6 +134,9 @@ pnpm lint
 pnpm build
 git diff --check
 ```
+
+`pnpm install --frozen-lockfile` also completed successfully from the checked-in
+lockfile before the final production build.
 
 The final branch-vs-`main` code review is performed after the final integration
 checkpoint commit.

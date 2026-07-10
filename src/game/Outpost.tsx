@@ -4,6 +4,7 @@ import { memo, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { GAME_ASSETS } from "./assetManifest";
+import { isLegacyCameraObstacle } from "./outpostCameraObstacles";
 
 type CollisionBox = {
   position: [number, number, number];
@@ -30,7 +31,7 @@ function OutpostVisuals() {
       if (object instanceof THREE.Mesh) {
         object.castShadow = !object.name.startsWith("Ground");
         object.receiveShadow = true;
-        object.userData.cameraObstacle = true;
+        object.userData.cameraObstacle = isLegacyCameraObstacle(object.name);
       }
     });
   }, [scene]);

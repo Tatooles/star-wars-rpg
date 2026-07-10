@@ -446,7 +446,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
         <Canvas
         shadows="basic"
         camera={{ fov: 54, near: 0.08, far: 180, position: [2.4, 4.5, 25] }}
-        dpr={[1, 1.7]}
+        dpr={[1, 1.5]}
         gl={{ antialias: true, powerPreference: "high-performance" }}
         onCreated={({ gl, scene }) => {
           sceneRef.current = scene;
@@ -464,7 +464,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
           color="#ffe2bd"
           intensity={3.2}
           position={[14, 24, 10]}
-          shadow-mapSize={[2048, 2048]}
+          shadow-mapSize={[1024, 1024]}
           shadow-camera-left={-34}
           shadow-camera-right={34}
           shadow-camera-top={34}
@@ -532,7 +532,6 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             <Projectile
               key={projectile.id}
               projectile={projectile}
-              playerRef={playerRef}
               playing={playing}
               blockingRef={blockingRef}
               invulnerableRef={invulnerableRef}
