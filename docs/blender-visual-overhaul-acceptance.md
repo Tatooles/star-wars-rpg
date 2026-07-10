@@ -8,10 +8,10 @@ Reference: [`blender-visual-overhaul-handoff.md`](./blender-visual-overhaul-hand
 
 ## Result
 
-The visual-overhaul acceptance audit passes. The original Blender sources,
-runtime GLBs, controller-driven clips, local loading path, preserved gameplay
-state machine, and 1080p production render all passed their automated or live
-checks. Browser coverage limitations are recorded below.
+The visual-overhaul implementation is complete, but this audit remains pending
+one final runtime gate: repeat the 1920×1080 production measurement after the
+review-driven character fidelity pass. The Mac locked before that repeat could
+run, and a throttled locked-screen sample is not valid performance evidence.
 
 ## Asset and Blender audit
 
@@ -28,13 +28,13 @@ armatures, and action names, and only then replaced the runtime GLB.
 
 | Asset | Triangles | Materials | Clips | GLB bytes | Result |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Anakin | 5,608 | 7 | 11 | 468,308 | Pass |
-| B1 | 3,476 | 4 | 5 | 285,212 | Pass |
-| B2 | 4,092 | 4 | 6 | 329,156 | Pass |
+| Anakin | 22,392 | 8 | 11 | 1,647,800 | Pass |
+| B1 | 4,548 | 4 | 5 | 371,020 | Pass |
+| B2 | 5,212 | 4 | 6 | 416,780 | Pass |
 | Outpost kit | 12,408 | 7 | 0 | 920,116 | Pass |
 | Beacon | 2,300 | 3 | 0 | 174,784 | Pass |
 
-The five runtime files total 2,177,576 bytes (2.08 MiB), so additional mesh
+The five runtime files total 3,530,500 bytes (3.37 MiB), so additional mesh
 compression was not required to meet loading or frame-time targets. The files
 contain no external texture/model URLs. Material color, roughness, metalness,
 emissive accents, edge variation, and modeled scorch/weathering detail are
@@ -64,7 +64,8 @@ Visual review images:
 - B1 and B2 muzzle positions resolve from their GLB attachment nodes, with the
   prior physics-position calculation retained as a safe fallback.
 - A defeated enemy unregisters as a target and loses its collider immediately;
-  its authored `Defeat` clip remains visible for 1.6 seconds.
+  its authored `Defeat` clip remains visible for 2 seconds, longer than the
+  longest 44-frame authored defeat.
 - The title screen preloads all five local GLBs. A cold production reload showed
   `Loading Mission` disabled, then changed to enabled `Start Mission` only after
   all assets resolved.
@@ -92,6 +93,14 @@ memory. Viewport: 1920×1080. Production Vite preview, full local asset set.
 | GPU textures | 3 |
 | Shader programs | 7 |
 
+This telemetry was captured immediately before the review-driven character
+fidelity pass. That pass brought the final visible scene to approximately 134k
+triangles while preserving the same
+materials, animation mixers, lights, and effects. A repeat capture was attempted,
+but the Mac locked and the browser was throttled to 1 FPS; that throttled result
+was discarded rather than presented as a GPU measurement.
+
+This section is therefore baseline evidence, not the final performance pass.
 The production scene mounts the complete environment, all eight shared-source
 B1 instances, the B2, Anakin, beacon, HUD-linked indicators, lights, shadows,
 and atmosphere. Attack and dodge were exercised live without dropping below

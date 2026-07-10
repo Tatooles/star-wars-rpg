@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useMemo, useRef } from "react";
+import { RefObject, useEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { GAME_ASSETS, type AnakinClip } from "./assetManifest";
@@ -20,7 +20,7 @@ export type CombatPose = {
   interacting: boolean;
 };
 
-function createSaberBlade() {
+function createSaberEffect() {
   const group = new THREE.Group();
   group.name = "RuntimeSaberBlade";
   const core = new THREE.Mesh(
@@ -44,7 +44,25 @@ function createSaberBlade() {
   const light = new THREE.PointLight("#268cff", 3.2, 3.5);
   light.position.y = 0.55;
   group.add(light);
-  return group;
+  const trailMaterial = new THREE.MeshBasicMaterial({
+    color: "#51b7ff",
+    transparent: true,
+    opacity: 0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
+  const trail = new THREE.Mesh(
+    new THREE.RingGeometry(0.32, 1.18, 28, 1, -Math.PI * 0.62, Math.PI * 1.24),
+    trailMaterial,
+  );
+  trail.name = "RuntimeSaberSweep";
+  trail.rotation.x = Math.PI / 2;
+  trail.position.y = 0.08;
+  trail.visible = false;
+  group.add(trail);
+  return { group, trail, trailMaterial };
 }
 
 export function AnakinModel({ moving, backpedaling, combatPose, health }: AnakinModelProps) {
@@ -52,22 +70,32 @@ export function AnakinModel({ moving, backpedaling, combatPose, health }: Anakin
   const desiredClip = useRef<AnakinClip>("Idle");
   const previousHealth = useRef(health);
   const hitFor = useRef(0);
-  const saberBlade = useMemo(() => createSaberBlade(), []);
+  const saberEffectRef = useRef<ReturnType<typeof createSaberEffect> | null>(null);
+  if (saberEffectRef.current === null) saberEffectRef.current = createSaberEffect();
 
   useEffect(() => {
     const anchor = imported.current?.getObject("SaberBladeAnchor");
     if (!anchor) return;
-    anchor.add(saberBlade);
+    const saberEffect = saberEffectRef.current;
+    if (!saberEffect) return;
+    anchor.add(saberEffect.group);
     return () => {
-      anchor.remove(saberBlade);
+      anchor.remove(saberEffect.group);
     };
-  }, [saberBlade]);
+  }, []);
 
   useFrame((_, delta) => {
     if (health < previousHealth.current && health > 0) hitFor.current = 0.3;
     previousHealth.current = health;
     hitFor.current = Math.max(0, hitFor.current - delta);
     const pose = combatPose.current;
+    const trailStrength = pose.attacking ? Math.sin(pose.attackProgress * Math.PI) : 0;
+    const saberEffect = saberEffectRef.current;
+    if (saberEffect) {
+      saberEffect.trail.visible = trailStrength > 0.03;
+      saberEffect.trailMaterial.opacity = trailStrength * 0.22;
+      saberEffect.trail.rotation.z = pose.comboStep === 1 ? Math.PI : pose.comboStep * 0.35;
+    }
     if (health <= 0) desiredClip.current = "Defeat";
     else if (hitFor.current > 0) desiredClip.current = "Hit";
     else if (pose.attacking) desiredClip.current = `Attack${pose.comboStep + 1}` as AnakinClip;

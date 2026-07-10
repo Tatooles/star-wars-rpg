@@ -1,4 +1,5 @@
-export const DEFEAT_PRESENTATION_SECONDS = 1.6;
+// Longer than the longest authored defeat clip (B2: 44 frames at 24 fps).
+export const DEFEAT_PRESENTATION_SECONDS = 2;
 
 export function getEnemyPresentation(alive: boolean, defeatedForSeconds: number) {
   if (alive) {

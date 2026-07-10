@@ -153,6 +153,7 @@ export function B1Droid({
         bodyRef={bodyRef}
         enemy={enemy}
         locked={locked}
+        showHealthBar={enemy.alive}
       />
     </RigidBody>
   );

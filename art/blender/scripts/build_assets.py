@@ -60,6 +60,17 @@ def finish(obj, name, material, bevel=0.0):
     return obj
 
 
+def subdivide(obj, levels=2):
+    modifier = obj.modifiers.new("Authored surface refinement", "SUBSURF")
+    modifier.levels = levels
+    modifier.render_levels = levels
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
+    bpy.ops.object.modifier_apply(modifier=modifier.name)
+    obj.select_set(False)
+    return obj
+
+
 def box(name, loc, dims, material, rot=(0, 0, 0), bevel=0.025):
     bpy.ops.mesh.primitive_cube_add(location=loc, rotation=rot)
     obj = bpy.context.object
@@ -71,6 +82,23 @@ def box(name, loc, dims, material, rot=(0, 0, 0), bevel=0.025):
 def cylinder(name, loc, radius, depth, material, rot=(0, 0, 0), vertices=12, bevel=0.015):
     bpy.ops.mesh.primitive_cylinder_add(vertices=vertices, radius=radius, depth=depth, location=loc, rotation=rot)
     return finish(bpy.context.object, name, material, bevel)
+
+
+def cylinder_between(name, start, end, radius, material, vertices=12, bevel=0.015):
+    start_v, end_v = Vector(start), Vector(end)
+    direction = end_v - start_v
+    midpoint = (start_v + end_v) * 0.5
+    bpy.ops.mesh.primitive_cylinder_add(
+        vertices=vertices,
+        radius=radius,
+        depth=direction.length,
+        location=midpoint,
+    )
+    obj = bpy.context.object
+    obj.rotation_mode = "QUATERNION"
+    obj.rotation_quaternion = Vector((0, 0, 1)).rotation_difference(direction.normalized())
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    return finish(obj, name, material, bevel)
 
 
 def cone(name, loc, r1, r2, depth, material, rot=(0, 0, 0), vertices=12, bevel=0.01):
@@ -228,10 +256,10 @@ def humanoid_bones(scale=1.0):
         ("Hips", (0, 0, 0.82*s), (0, 0, 1.04*s), "Root"),
         ("Spine", (0, 0, 1.04*s), (0, 0, 1.53*s), "Hips"),
         ("Head", (0, 0, 1.53*s), (0, 0, 2.02*s), "Spine"),
-        ("UpperArm.L", (-0.28*s, 0, 1.48*s), (-0.7*s, 0, 1.36*s), "Spine"),
-        ("LowerArm.L", (-0.7*s, 0, 1.36*s), (-0.88*s, -0.02*s, 1.02*s), "UpperArm.L"),
-        ("UpperArm.R", (0.28*s, 0, 1.48*s), (0.7*s, 0, 1.36*s), "Spine"),
-        ("LowerArm.R", (0.7*s, 0, 1.36*s), (0.88*s, -0.02*s, 1.02*s), "UpperArm.R"),
+        ("UpperArm.L", (-0.28*s, 0, 1.48*s), (-0.61*s, 0, 1.23*s), "Spine"),
+        ("LowerArm.L", (-0.61*s, 0, 1.23*s), (-0.76*s, -0.03*s, 0.94*s), "UpperArm.L"),
+        ("UpperArm.R", (0.28*s, 0, 1.48*s), (0.61*s, 0, 1.23*s), "Spine"),
+        ("LowerArm.R", (0.61*s, 0, 1.23*s), (0.76*s, -0.03*s, 0.94*s), "UpperArm.R"),
         ("UpperLeg.L", (-0.19*s, 0, 0.9*s), (-0.2*s, 0, 0.48*s), "Hips"),
         ("LowerLeg.L", (-0.2*s, 0, 0.48*s), (-0.2*s, 0, 0.08*s), "UpperLeg.L"),
         ("UpperLeg.R", (0.19*s, 0, 0.9*s), (0.2*s, 0, 0.48*s), "Hips"),
@@ -250,32 +278,53 @@ def build_anakin():
     accent = mat("SaberGrip", (0.035, 0.04, 0.045), metallic=0.35, roughness=0.5)
     rig = armature("Anakin", humanoid_bones())
     parts = []
-    parts += [(cone("Torso", (0, 0, 1.31), .34, .25, .58, cloth, vertices=12), "Spine")]
-    parts += [(box("ShoulderTabard", (0, -0.18, 1.43), (.62, .07, .48), cloth2, rot=(0.12, 0, 0)), "Spine")]
+    torso = cone("Torso", (0, 0, 1.31), .28, .43, .58, cloth, vertices=24, bevel=.025)
+    parts += [(subdivide(torso, 2), "Spine")]
+    parts += [(box("ShoulderTabard", (0, -0.18, 1.43), (.78, .07, .48), cloth2, rot=(0.12, 0, 0), bevel=.035), "Spine")]
+    parts += [(box("RearRobeLayer", (0, .19, 1.25), (.58, .06, .78), cloth, rot=(-.08,0,0), bevel=.04), "Spine")]
+    parts += [(box("InnerTunic", (0,-.22,1.30), (.46,.06,.56), cloth2, rot=(.05,0,0), bevel=.035), "Spine")]
+    parts += [(cylinder("Neck", (0,0,1.63), .105,.22,skin,vertices=20,bevel=.018), "Head")]
     parts += [(box("Belt", (0, 0, 1.02), (.75, .27, .12), leather, bevel=.035), "Hips")]
+    parts += [(box("BeltBuckle", (0,-.155,1.02), (.16,.055,.10), metal, bevel=.018), "Hips")]
+    for side in (-1,1):
+        parts += [(box(f"BeltPouch{side}", (side*.25,-.14,.98), (.15,.08,.18), leather, bevel=.025), "Hips")]
     parts += [(box("TunicPanelL", (-.17, -.08, .72), (.28, .08, .72), cloth2, rot=(0.08, 0.06, -.06)), "Hips")]
     parts += [(box("TunicPanelR", (.17, -.08, .72), (.28, .08, .72), cloth2, rot=(0.08, -.06, .06)), "Hips")]
-    parts += [(sphere("Head", (0, -.015, 1.82), (.23, .20, .29), skin), "Head")]
-    parts += [(box("Nose", (0, -.205, 1.82), (.065, .075, .11), skin, bevel=.025), "Head")]
-    parts += [(sphere("HairCap", (0, .015, 1.97), (.255, .22, .18), hair), "Head")]
-    for x, yaw in ((-.18, -.18), (.18, .18), (-.25, -.35), (.25, .35)):
-        parts += [(cone(f"HairLock{x}", (x, .04, 1.74), .045, .075, .48, hair, rot=(0, yaw, 0), vertices=7), "Head")]
-    for side, bone, x in ((-1, "UpperArm.L", -.48), (1, "UpperArm.R", .48)):
-        parts += [(cylinder(f"UpperArm{side}", (x, 0, 1.38), .105, .48, cloth, rot=(0, math.pi/2, 0), vertices=10), bone)]
+    parts += [(sphere("Head", (0, -.015, 1.82), (.155, .145, .175), skin, segments=48, rings=32), "Head")]
+    parts += [(cone("Jaw", (0,-.02,1.70), .115,.15,.16,skin,vertices=24,bevel=.018), "Head")]
+    parts += [(box("Nose", (0, -.157, 1.82), (.042, .055, .075), skin, bevel=.018), "Head")]
+    eye_mat = mat("Anakin_Eyes", (.035, .055, .065), roughness=.42)
+    for side in (-1, 1):
+        parts += [(sphere(f"Eye_{side}", (side*.055, -.151, 1.845), (.021, .012, .014), eye_mat, segments=16, rings=10), "Head")]
+        parts += [(box(f"Brow_{side}", (side*.056, -.161, 1.885), (.072, .014, .014), hair, rot=(0, side*.08, side*.05), bevel=.006), "Head")]
+        parts += [(sphere(f"Ear_{side}", (side*.158,-.005,1.81), (.025,.024,.045), skin, segments=16, rings=10), "Head")]
+    parts += [(sphere("HairCap", (0, .015, 1.94), (.175, .16, .105), hair, segments=48, rings=28), "Head")]
+    for index, (x, yaw, depth) in enumerate(((-.12,-.12,.34),(.12,.12,.34),(-.17,-.25,.42),(.17,.25,.42),(-.07,-.05,.46),(.07,.05,.46))):
+        parts += [(cone(f"HairLock{index}", (x, .045, 1.75), .025, .055, depth, hair, rot=(0, yaw, 0), vertices=12, bevel=.008), "Head")]
+    for side, bone in ((-1, "UpperArm.L"), (1, "UpperArm.R")):
+        shoulder = (side*.28, 0, 1.48)
+        elbow = (side*.61, 0, 1.23)
+        hand = (side*.76, -.03, .94)
+        parts += [(sphere(f"Shoulder{side}", shoulder, (.17, .15, .17), cloth, segments=24, rings=16), bone)]
+        parts += [(cylinder_between(f"UpperArm{side}", shoulder, elbow, .115, cloth, vertices=20), bone)]
         fore_bone = "LowerArm.L" if side < 0 else "LowerArm.R"
-        parts += [(cylinder(f"Forearm{side}", (side*.78, -.01, 1.16), .095, .4, leather, rot=(0.12, math.pi/2, 0), vertices=10), fore_bone)]
-        parts += [(sphere(f"Hand{side}", (side*.91, -.03, 1.0), (.105, .09, .12), skin), fore_bone)]
+        parts += [(sphere(f"Elbow{side}", elbow, (.105, .10, .105), leather, segments=20, rings=12), fore_bone)]
+        parts += [(cylinder_between(f"Forearm{side}", elbow, hand, .095, leather, vertices=20), fore_bone)]
+        parts += [(sphere(f"Hand{side}", hand, (.078, .068, .10), skin, segments=24, rings=16), fore_bone)]
+        for finger in range(3):
+            parts += [(cylinder(f"Finger{side}_{finger}", (side*(.79+finger*.006),-.08-finger*.018,.91), .012,.10,skin,rot=(math.pi/2,0,0),vertices=10,bevel=.004), fore_bone)]
     for side, upper, lower, x in ((-1, "UpperLeg.L", "LowerLeg.L", -.2), (1, "UpperLeg.R", "LowerLeg.R", .2)):
-        parts += [(cylinder(f"Thigh{side}", (x, 0, .69), .14, .48, cloth, vertices=10), upper)]
-        parts += [(cylinder(f"Boot{side}", (x, 0, .27), .14, .52, leather, vertices=10), lower)]
-        parts += [(box(f"Foot{side}", (x, -.10, .06), (.3, .48, .13), leather, bevel=.04), lower)]
-    hilt = cylinder("Authored_Lightsaber_Hilt", (.92, -.05, .83), .055, .34, metal, rot=(math.pi/2, 0, 0), vertices=16, bevel=.018)
-    grip = cylinder("Saber_Grip", (.92, -.05, .84), .061, .15, accent, rot=(math.pi/2, 0, 0), vertices=12, bevel=.01)
-    emitter = torus("Saber_Emitter", (.92, -.225, .84), .064, .013, metal, rot=(math.pi/2, 0, 0), segments=16)
+        parts += [(cone(f"Thigh{side}", (x, 0, .69), .13, .16, .48, cloth, vertices=12), upper)]
+        parts += [(sphere(f"Knee{side}", (x,-.01,.46), (.135,.125,.12), leather, segments=20, rings=12), lower)]
+        parts += [(cone(f"Boot{side}", (x, 0, .25), .125, .105, .46, leather, vertices=20), lower)]
+        parts += [(box(f"Foot{side}", (x, -.07, .06), (.24, .36, .13), leather, bevel=.045), lower)]
+    hilt = cylinder("Authored_Lightsaber_Hilt", (.78, -.08, .79), .055, .34, metal, rot=(math.pi/2, 0, 0), vertices=16, bevel=.018)
+    grip = cylinder("Saber_Grip", (.78, -.08, .79), .061, .15, accent, rot=(math.pi/2, 0, 0), vertices=12, bevel=.01)
+    emitter = torus("Saber_Emitter", (.78, -.255, .79), .064, .013, metal, rot=(math.pi/2, 0, 0), segments=16)
     parts += [(hilt, "LowerArm.R"), (grip, "LowerArm.R"), (emitter, "LowerArm.R")]
     for obj, bone in parts:
         parent_to_bone(obj, rig, bone)
-    anchor = parent_to_bone(empty("SaberBladeAnchor", (.92, -.25, .84)), rig, "LowerArm.R")
+    anchor = parent_to_bone(empty("SaberBladeAnchor", (.78, -.28, .79)), rig, "LowerArm.R")
     anchor.rotation_euler = (math.pi/2, 0, 0)
     rig["asset"] = "Original grounded-stylized Anakin interpretation"
     add_character_actions(rig, "anakin")
@@ -298,21 +347,31 @@ def build_b1():
     parts += [(box("B1_Snout", (0, -.31, 1.68), (.20, .22, .10), tan, rot=(.08, 0, 0), bevel=.025), "Head")]
     parts += [(box("Photoreceptor", (0, -.425, 1.72), (.24, .025, .035), dark, bevel=.008), "Head")]
     parts += [(cylinder("B1_Neck", (0, 0, 1.54), .055, .22, dark, vertices=8), "Head")]
-    for side, upper, lower, x in ((-1, "UpperArm.L", "LowerArm.L", -.34), (1, "UpperArm.R", "LowerArm.R", .34)):
-        parts += [(cylinder(f"B1_UpperArm{side}", (x, 0, 1.26), .055, .48, tan, rot=(0, math.pi/2, 0), vertices=8), upper)]
-        parts += [(cylinder(f"B1_Forearm{side}", (side*.65, -.02, 1.08), .065, .39, tan2, rot=(.12, math.pi/2, 0), vertices=8), lower)]
-        parts += [(sphere(f"B1_Elbow{side}", (side*.52, 0, 1.2), (.085, .075, .085), dark, segments=10, rings=6), lower)]
+    parts += [(sphere("B1_Pelvis", (0,0,.86), (.24,.18,.18), dark, segments=12, rings=8), "Hips")]
+    for rib_index, (rib_z, rib_width) in enumerate(((1.16,.40),(1.28,.36),(1.39,.30))):
+        parts += [(box(f"B1_ChestRib_{rib_index}", (0,-.18,rib_z), (rib_width,.08,.055), tan2, bevel=.014), "Spine")]
+    parts += [(cylinder("B1_Antenna", (.13,.01,1.96), .012,.34,dark,rot=(0,.22,0),vertices=6,bevel=0), "Head")]
+    for side, upper, lower in ((-1, "UpperArm.L", "LowerArm.L"), (1, "UpperArm.R", "LowerArm.R")):
+        shoulder = (side*.28*.94, 0, 1.48*.94)
+        elbow = (side*.61*.94, 0, 1.23*.94)
+        hand = (side*.76*.94, -.03*.94, .94*.94)
+        parts += [(sphere(f"B1_Shoulder{side}", shoulder, (.11,.09,.11), dark, segments=10, rings=6), upper)]
+        parts += [(cylinder_between(f"B1_UpperArm{side}", shoulder, elbow, .058, tan, vertices=8), upper)]
+        parts += [(sphere(f"B1_Elbow{side}", elbow, (.085, .075, .085), dark, segments=10, rings=6), lower)]
+        parts += [(cylinder_between(f"B1_Forearm{side}", elbow, hand, .065, tan2, vertices=8), lower)]
+        parts += [(sphere(f"B1_Hand{side}", hand, (.075,.065,.085), dark, segments=8, rings=6), lower)]
     for side, upper, lower, x in ((-1, "UpperLeg.L", "LowerLeg.L", -.14), (1, "UpperLeg.R", "LowerLeg.R", .14)):
         parts += [(cylinder(f"B1_Thigh{side}", (x, 0, .67), .065, .48, tan, vertices=8), upper)]
+        parts += [(sphere(f"B1_Knee{side}", (x,0,.46), (.09,.08,.09), dark, segments=10, rings=6), lower)]
         parts += [(cylinder(f"B1_Shin{side}", (x, 0, .27), .06, .5, tan2, vertices=8), lower)]
         parts += [(box(f"B1_Foot{side}", (x, -.12, .055), (.19, .38, .10), tan, bevel=.025), lower)]
-    blaster = box("E5_Blaster", (.69, -.23, 1.05), (.11, .72, .12), dark, rot=(.08, 0, 0), bevel=.025)
-    barrel = cylinder("E5_Barrel", (.69, -.62, 1.03), .026, .42, dark, rot=(math.pi/2, 0, 0), vertices=10)
+    blaster = box("E5_Blaster", (.70, -.25, .92), (.11, .72, .12), dark, rot=(.08, 0, 0), bevel=.025)
+    barrel = cylinder("E5_Barrel", (.70, -.64, .90), .026, .42, dark, rot=(math.pi/2, 0, 0), vertices=10)
     scorch_mark = cylinder("ScorchMark", (-.1, -.18, 1.28), .08, .012, scorch, rot=(math.pi/2, 0, 0), vertices=12, bevel=0)
     parts += [(blaster, "LowerArm.R"), (barrel, "LowerArm.R"), (scorch_mark, "Spine")]
     for obj, bone in parts:
         parent_to_bone(obj, rig, bone)
-    parent_to_bone(empty("Muzzle_B1", (.69, -.84, 1.03)), rig, "LowerArm.R")
+    parent_to_bone(empty("Muzzle_B1", (.70, -.86, .90)), rig, "LowerArm.R")
     rig["asset"] = "Original B1 battle droid benchmark"
     add_character_actions(rig, "b1")
     clear_pose(rig)
@@ -333,21 +392,32 @@ def build_b2():
     parts += [(box("B2_Head", (0, -.10, 1.88), (.70, .52, .32), armor, rot=(.08, 0, 0), bevel=.07), "Head")]
     parts += [(box("B2_Visor", (0, -.38, 1.89), (.47, .04, .07), dark, bevel=.015), "Head")]
     parts += [(box("B2_Brow", (0, -.39, 1.99), (.62, .05, .08), edge, bevel=.02), "Head")]
+    parts += [(box("B2_Jaw", (0,-.35,1.76), (.44,.16,.12), armor, rot=(-.08,0,0), bevel=.035), "Head")]
+    for side in (-1,1):
+        parts += [(box(f"B2_ChestVent{side}", (side*.25,-.38,1.45), (.18,.045,.20), dark, rot=(0,0,side*.1), bevel=.02), "Spine")]
+    for plate_index, plate_z in enumerate((1.18,1.05,.92)):
+        parts += [(box(f"B2_AbPlate{plate_index}", (0,-.23,plate_z), (.54-.06*plate_index,.12,.12), edge, bevel=.025), "Spine")]
     for side, upper, lower in ((-1, "UpperArm.L", "LowerArm.L"), (1, "UpperArm.R", "LowerArm.R")):
-        parts += [(sphere(f"B2_Shoulder{side}", (side*.63, 0, 1.52), (.34, .31, .34), armor), upper)]
-        parts += [(cylinder(f"B2_UpperArm{side}", (side*.69, 0, 1.2), .19, .58, armor, vertices=10), upper)]
-        parts += [(cone(f"B2_Forearm{side}", (side*.72, -.05, .84), .19, .27, .56, edge, vertices=10), lower)]
+        shoulder = (side*.28*1.08, 0, 1.48*1.08)
+        elbow = (side*.61*1.08, 0, 1.23*1.08)
+        hand = (side*.76*1.08, -.03*1.08, .94*1.08)
+        parts += [(sphere(f"B2_Shoulder{side}", shoulder, (.34, .31, .34), armor), upper)]
+        parts += [(cylinder_between(f"B2_UpperArm{side}", shoulder, elbow, .19, armor, vertices=12, bevel=.025), upper)]
+        parts += [(sphere(f"B2_Elbow{side}", elbow, (.22,.20,.22), dark, segments=12, rings=8), lower)]
+        parts += [(cylinder_between(f"B2_Forearm{side}", elbow, hand, .22, edge, vertices=12, bevel=.03), lower)]
+        parts += [(box(f"B2_Knuckle{side}", hand, (.34,.26,.24), armor, bevel=.05), lower)]
     for side, upper, lower in ((-1, "UpperLeg.L", "LowerLeg.L"), (1, "UpperLeg.R", "LowerLeg.R")):
         parts += [(cone(f"B2_Thigh{side}", (side*.25, 0, .7), .19, .27, .58, armor, vertices=10), upper)]
+        parts += [(sphere(f"B2_Knee{side}", (side*.25,0,.48), (.23,.20,.20), dark, segments=12, rings=8), lower)]
         parts += [(cylinder(f"B2_Shin{side}", (side*.25, 0, .28), .19, .56, edge, vertices=10), lower)]
         parts += [(box(f"B2_Foot{side}", (side*.25, -.14, .07), (.42, .62, .14), armor, bevel=.055), lower)]
-    cannon = cylinder("B2_ArmCannon", (.72, -.32, .84), .13, .62, dark, rot=(math.pi/2, 0, 0), vertices=12, bevel=.018)
-    muzzle_ring = torus("B2_MuzzleRing", (.72, -.64, .84), .135, .025, edge, rot=(math.pi/2, 0, 0), segments=16)
+    cannon = cylinder("B2_ArmCannon", (.82, -.35, .96), .13, .62, dark, rot=(math.pi/2, 0, 0), vertices=12, bevel=.018)
+    muzzle_ring = torus("B2_MuzzleRing", (.82, -.67, .96), .135, .025, edge, rot=(math.pi/2, 0, 0), segments=16)
     mark = cylinder("B2_ScorchMark", (.22, -.37, 1.43), .11, .015, scorch, rot=(math.pi/2, 0, 0), vertices=14, bevel=0)
     parts += [(cannon, "LowerArm.R"), (muzzle_ring, "LowerArm.R"), (mark, "Spine")]
     for obj, bone in parts:
         parent_to_bone(obj, rig, bone)
-    parent_to_bone(empty("Muzzle_B2", (.72, -.79, .84)), rig, "LowerArm.R")
+    parent_to_bone(empty("Muzzle_B2", (.82, -.82, .96)), rig, "LowerArm.R")
     rig["asset"] = "Original B2 super battle droid"
     add_character_actions(rig, "b2")
     clear_pose(rig)
