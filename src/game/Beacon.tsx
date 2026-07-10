@@ -19,7 +19,7 @@ export function Beacon({ disabled }: BeaconProps) {
   });
 
   return (
-    <group position={[0, 1.2, -44]}>
+    <group position={[0, 1.2, -44]} userData={{ cameraObstacle: true }}>
       <mesh castShadow>
         <cylinderGeometry args={[2.5, 3.1, 2.4, 10]} />
         <meshStandardMaterial color="#263138" metalness={0.75} roughness={0.38} />

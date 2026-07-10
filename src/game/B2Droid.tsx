@@ -35,12 +35,24 @@ export function B2Droid({
   const burstTimer = useRef(0);
   const meleeCooldown = useRef(0);
   const muzzleFlash = useRef<THREE.PointLight>(null);
+  const model = useRef<THREE.Group>(null);
+  const lastHealth = useRef(enemy.health);
+  const hitReaction = useRef(0);
 
   useFrame((_, delta) => {
     const body = bodyRef.current;
     const player = playerRef.current;
     registerBody(enemy.id, enemy.alive ? body : null);
+    if (enemy.health < lastHealth.current) hitReaction.current = 0.3;
+    lastHealth.current = enemy.health;
+    hitReaction.current = Math.max(0, hitReaction.current - delta);
+    if (model.current) {
+      model.current.rotation.z = hitReaction.current > 0
+        ? Math.sin(hitReaction.current * 36) * 0.1
+        : 0;
+    }
     if (!body || !player || !playing || !active || !enemy.alive) return;
+    if (hitReaction.current > 0) return;
     const position = body.translation();
     const playerPosition = player.translation();
     const towardPlayer = new THREE.Vector3(
@@ -100,7 +112,7 @@ export function B2Droid({
       name={`enemy-${enemy.id}`}
     >
       <CapsuleCollider args={[0.85, 0.68]} position={[0, 0.25, 0]} />
-      <group>
+      <group ref={model}>
         <mesh material={armor} position={[0, 1.7, 0]} castShadow>
           <boxGeometry args={[1.05, 0.72, 0.72]} />
         </mesh>

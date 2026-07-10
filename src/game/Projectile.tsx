@@ -12,6 +12,7 @@ export type ProjectileState = {
 
 type ProjectileProps = {
   projectile: ProjectileState;
+  playing: boolean;
   blockingRef: RefObject<boolean>;
   invulnerableRef: RefObject<boolean>;
   onRemove: (id: number) => void;
@@ -22,6 +23,7 @@ type ProjectileProps = {
 
 export function Projectile({
   projectile,
+  playing,
   blockingRef,
   invulnerableRef,
   onRemove,
@@ -35,7 +37,7 @@ export function Projectile({
   const resolved = useRef(false);
 
   useFrame((_, delta) => {
-    if (!body.current || resolved.current) return;
+    if (!playing || !body.current || resolved.current) return;
     age.current += delta;
     if (projectile.reflected) {
       reflectedAge.current += delta;

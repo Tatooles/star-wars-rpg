@@ -1,5 +1,7 @@
 export type SoundCue =
-  | "swing"
+  | "swing1"
+  | "swing2"
+  | "swing3"
   | "impact"
   | "blaster"
   | "reflect"
@@ -39,9 +41,10 @@ export class ProceduralAudio {
     if (!context || !master || context.state !== "running") return;
     const now = context.currentTime;
 
-    if (cue === "swing") {
-      this.tone(150, 58, 0.22, "sawtooth", 0.08);
-      this.noise(0.12, 0.04, 900);
+    if (cue === "swing1" || cue === "swing2" || cue === "swing3") {
+      const variation = cue === "swing1" ? 0 : cue === "swing2" ? 1 : 2;
+      this.tone([150, 195, 125][variation], [58, 72, 44][variation], [0.22, 0.25, 0.31][variation], "sawtooth", 0.08);
+      this.noise([0.12, 0.15, 0.2][variation], 0.04, [900, 1250, 720][variation]);
     } else if (cue === "impact") {
       this.tone(95, 42, 0.18, "square", 0.1);
       this.noise(0.11, 0.08, 420);

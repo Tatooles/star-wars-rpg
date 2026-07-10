@@ -74,7 +74,7 @@ export function Outpost() {
 
       <Obstacle position={[-5.7, 1.8, -5]} size={[1.1, 4.6, 8]} material={metalMaterial} />
       <Obstacle position={[5.7, 1.8, -5]} size={[1.1, 4.6, 8]} material={metalMaterial} />
-      <mesh material={metalMaterial} position={[0, 0.15, -22]} receiveShadow>
+      <mesh material={metalMaterial} position={[0, 0.15, -22]} receiveShadow userData={{ cameraObstacle: true }}>
         <cylinderGeometry args={[8.6, 9.1, 0.5, 12]} />
       </mesh>
       <RigidBody type="fixed" colliders="cuboid" position={[0, -0.45, -42]}>
@@ -84,7 +84,7 @@ export function Outpost() {
       </RigidBody>
 
       {[-1, 1].map((side) => (
-        <group key={side} position={[side * 6.3, 2.4, -39]}>
+        <group key={side} position={[side * 6.3, 2.4, -39]} userData={{ cameraObstacle: true }}>
           <mesh material={metalMaterial} castShadow userData={{ cameraObstacle: true }}>
             <cylinderGeometry args={[0.7, 1.15, 5.4, 8]} />
           </mesh>
@@ -94,7 +94,7 @@ export function Outpost() {
         </group>
       ))}
       {[-1, 1].map((side) => (
-        <group key={`signal-${side}`} position={[side * 5.2, 1.05, -31]}>
+        <group key={`signal-${side}`} position={[side * 5.2, 1.05, -31]} userData={{ cameraObstacle: true }}>
           <mesh material={metalMaterial} castShadow>
             <boxGeometry args={[0.8, 2.1, 0.8]} />
           </mesh>

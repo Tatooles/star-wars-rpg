@@ -37,6 +37,8 @@ export function B1Droid({
   const telegraph = useRef(0);
   const orbitDirection = useRef(1);
   const engageTime = useRef(0);
+  const lastHealth = useRef(enemy.health);
+  const hitReaction = useRef(0);
   const model = useRef<THREE.Group>(null);
   const telegraphLight = useRef<THREE.PointLight>(null);
 
@@ -44,7 +46,17 @@ export function B1Droid({
     const body = bodyRef.current;
     const player = playerRef.current;
     registerBody(enemy.id, enemy.alive ? body : null);
+    if (enemy.health < lastHealth.current) hitReaction.current = 0.24;
+    lastHealth.current = enemy.health;
+    hitReaction.current = Math.max(0, hitReaction.current - delta);
+    if (model.current) {
+      model.current.position.y = Math.sin(performance.now() * 0.004) * 0.025;
+      model.current.rotation.z = hitReaction.current > 0
+        ? Math.sin(hitReaction.current * 42) * 0.14
+        : 0;
+    }
     if (!body || !player || !playing || !active || !enemy.alive) return;
+    if (hitReaction.current > 0) return;
     const position = body.translation();
     const playerPosition = player.translation();
     const towardPlayer = new THREE.Vector3(
@@ -77,7 +89,6 @@ export function B1Droid({
       telegraph.current = 0;
       if (Math.random() > 0.68) orbitDirection.current *= -1;
     }
-    if (model.current) model.current.position.y = Math.sin(performance.now() * 0.004) * 0.025;
     if (telegraphLight.current) {
       telegraphLight.current.intensity = telegraph.current * 8;
       telegraphLight.current.color.set(telegraph.current > 0 ? "#ff3b1f" : "#5e160d");

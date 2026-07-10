@@ -7,7 +7,7 @@ import {
   RigidBody,
   useRapier,
 } from "@react-three/rapier";
-import { RefObject, useRef } from "react";
+import { RefObject, useCallback, useRef } from "react";
 import * as THREE from "three";
 import { AnakinModel, type CombatPose } from "./AnakinModel";
 import type { Controls } from "./useControls";
@@ -26,6 +26,7 @@ type PlayerProps = {
   blockingRef: RefObject<boolean>;
   invulnerableRef: RefObject<boolean>;
   lockedTargetRef: RefObject<RapierRigidBody | null>;
+  controlLockUntilRef: RefObject<number>;
   onEnemyHit: (enemyId: string, damage: number) => void;
   onSound: (cue: SoundCue) => void;
 };
@@ -38,6 +39,7 @@ export function Player({
   blockingRef,
   invulnerableRef,
   lockedTargetRef,
+  controlLockUntilRef,
   onEnemyHit,
   onSound,
 }: PlayerProps) {
@@ -47,7 +49,6 @@ export function Player({
   const lastJumpPress = useRef(0);
   const lastAttackPress = useRef(0);
   const lastDodgePress = useRef(0);
-  const lastBlockPress = useRef(0);
   const targetRotation = useRef(Math.PI);
   const attackTime = useRef(0);
   const attackDuration = useRef(ATTACK_DURATIONS[0]);
@@ -55,7 +56,6 @@ export function Player({
   const hitThisSwing = useRef(new Set<string>());
   const dodgeTime = useRef(0);
   const dodgeCooldown = useRef(0);
-  const blockGrace = useRef(0);
   const saberCollider = useRef<RapierCollider>(null);
   const pose = useRef<CombatPose>({
     attacking: false,
@@ -64,6 +64,15 @@ export function Player({
     blocking: false,
     dodging: false,
   });
+  const resolveEnemyHit = useCallback(
+    (name: string | undefined) => {
+      const enemyId = name?.replace("enemy-", "");
+      if (!enemyId || hitThisSwing.current.has(enemyId)) return;
+      hitThisSwing.current.add(enemyId);
+      onEnemyHit(enemyId, Math.round(34 * damageMultiplier));
+    },
+    [damageMultiplier, onEnemyHit],
+  );
 
   useFrame((_, delta) => {
     const body = bodyRef.current;
@@ -74,8 +83,9 @@ export function Player({
     const length = Math.hypot(x, z);
     const velocity = body.linvel();
     moving.current = length > 0.01;
+    const movementLocked = performance.now() < controlLockUntilRef.current;
 
-    if (length > 0) {
+    if (!movementLocked && length > 0) {
       const localAngle = Math.atan2(x, -z);
       const worldAngle = cameraYaw.current + localAngle;
       const wantsDodge = input.dodgePresses !== lastDodgePress.current && dodgeCooldown.current <= 0;
@@ -90,11 +100,11 @@ export function Player({
         true,
       );
       targetRotation.current = worldAngle;
-    } else {
+    } else if (!movementLocked) {
       body.setLinvel({ x: 0, y: velocity.y, z: 0 }, true);
     }
     const lockedTarget = lockedTargetRef.current;
-    if (lockedTarget) {
+    if (lockedTarget && !movementLocked) {
       const playerPosition = body.translation();
       const targetPosition = lockedTarget.translation();
       targetRotation.current = Math.atan2(
@@ -128,18 +138,15 @@ export function Player({
       attackDuration.current = ATTACK_DURATIONS[comboStep.current];
       attackTime.current = attackDuration.current;
       hitThisSwing.current.clear();
-      onSound("swing");
+      onSound((`swing${comboStep.current + 1}`) as SoundCue);
     }
     lastAttackPress.current = input.attackPresses;
-    if (input.blockPresses !== lastBlockPress.current) blockGrace.current = 0.9;
-    lastBlockPress.current = input.blockPresses;
-    blockGrace.current = Math.max(0, blockGrace.current - delta);
     attackTime.current = Math.max(0, attackTime.current - delta);
     const progress = 1 - attackTime.current / attackDuration.current;
     pose.current.attacking = attackTime.current > 0;
     pose.current.attackProgress = THREE.MathUtils.clamp(progress, 0, 1);
     pose.current.comboStep = comboStep.current;
-    pose.current.blocking = (input.block || blockGrace.current > 0) && attackTime.current <= 0;
+    pose.current.blocking = input.block && attackTime.current <= 0;
     pose.current.dodging = dodgeTime.current > 0;
     blockingRef.current = pose.current.blocking;
     const attackColliderEnabled =
@@ -163,11 +170,7 @@ export function Player({
         (collider) => {
           const parent = collider.parent();
           const name = parent ? rigidBodyStates.get(parent.handle)?.object.name : undefined;
-          const enemyId = name?.replace("enemy-", "");
-          if (name?.startsWith("enemy-") && enemyId && !hitThisSwing.current.has(enemyId)) {
-            hitThisSwing.current.add(enemyId);
-            onEnemyHit(enemyId, Math.round(34 * damageMultiplier));
-          }
+          if (name?.startsWith("enemy-")) resolveEnemyHit(name);
           return true;
         },
         undefined,
@@ -198,10 +201,7 @@ export function Player({
         sensor
         onIntersectionEnter={({ other }) => {
           if (!pose.current.attacking || pose.current.attackProgress < 0.18 || pose.current.attackProgress > 0.72) return;
-          const enemyId = other.rigidBodyObject?.name?.replace("enemy-", "");
-          if (!enemyId || hitThisSwing.current.has(enemyId)) return;
-          hitThisSwing.current.add(enemyId);
-          onEnemyHit(enemyId, Math.round(34 * damageMultiplier));
+          resolveEnemyHit(other.rigidBodyObject?.name);
         }}
       />
       <group ref={model}>

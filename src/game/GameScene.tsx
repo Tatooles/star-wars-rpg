@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { CuboidCollider, Physics, RapierRigidBody, RigidBody } from "@react-three/rapier";
+import { CuboidCollider, Physics, RapierRigidBody, RigidBody, useRapier } from "@react-three/rapier";
 import {
   Dispatch,
   MutableRefObject,
@@ -55,11 +55,13 @@ function MissionDirector({
   setBeaconNearby,
 }: MissionDirectorProps) {
   const { camera } = useThree();
+  const { world, rapier } = useRapier();
   const lastLockPress = useRef(0);
   const lastInteractPress = useRef(0);
   const wasNearBeacon = useRef(false);
+  const lineOfSightLostFor = useRef(0);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const player = playerRef.current;
     if (!player) return;
     const playerPosition = player.translation();
@@ -111,8 +113,30 @@ function MissionDirector({
       } else {
         const position = lockedBody.translation();
         const distance = Math.hypot(position.x - playerPosition.x, position.z - playerPosition.z);
-        if (distance > 28) dispatch({ type: "CLEAR_LOCK" });
+        const origin = { x: playerPosition.x, y: playerPosition.y + 0.65, z: playerPosition.z };
+        const direction = new THREE.Vector3(
+          position.x - origin.x,
+          position.y + 0.7 - origin.y,
+          position.z - origin.z,
+        );
+        const rayDistance = direction.length();
+        direction.normalize();
+        const hit = world.castRay(
+          new rapier.Ray(origin, direction),
+          rayDistance,
+          true,
+          undefined,
+          undefined,
+          undefined,
+          player,
+          (collider) => !collider.isSensor(),
+        );
+        const visible = !hit || hit.collider.parent()?.handle === lockedBody.handle;
+        lineOfSightLostFor.current = visible ? 0 : lineOfSightLostFor.current + delta;
+        if (distance > 28 || lineOfSightLostFor.current > 1.1) dispatch({ type: "CLEAR_LOCK" });
       }
+    } else {
+      lineOfSightLostFor.current = 0;
     }
 
     const lockPressed = controls.current.lockPresses !== lastLockPress.current;
@@ -144,19 +168,21 @@ function MissionDirector({
 
 function EncounterGate({ z }: { z: number }) {
   return (
-    <RigidBody type="fixed" colliders={false} position={[0, 2, z]}>
-      <CuboidCollider args={[5.5, 2.4, 0.18]} />
-      <mesh>
-        <boxGeometry args={[11, 4.8, 0.16]} />
-        <meshBasicMaterial color="#e8482f" transparent opacity={0.22} toneMapped={false} />
-      </mesh>
-      {[-4.5, -2.25, 0, 2.25, 4.5].map((x) => (
-        <mesh key={x} position={[x, 0, 0]}>
-          <boxGeometry args={[0.045, 4.5, 0.08]} />
-          <meshBasicMaterial color="#ff674c" toneMapped={false} />
+    <group userData={{ cameraObstacle: true }}>
+      <RigidBody type="fixed" colliders={false} position={[0, 2, z]}>
+        <CuboidCollider args={[5.5, 2.4, 0.18]} />
+        <mesh>
+          <boxGeometry args={[11, 4.8, 0.16]} />
+          <meshBasicMaterial color="#e8482f" transparent opacity={0.22} toneMapped={false} />
         </mesh>
-      ))}
-    </RigidBody>
+        {[-4.5, -2.25, 0, 2.25, 4.5].map((x) => (
+          <mesh key={x} position={[x, 0, 0]}>
+            <boxGeometry args={[0.045, 4.5, 0.08]} />
+            <meshBasicMaterial color="#ff674c" toneMapped={false} />
+          </mesh>
+        ))}
+      </RigidBody>
+    </group>
   );
 }
 
@@ -168,6 +194,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
   const controls = useControls(playing);
   const blockingRef = useRef(false);
   const invulnerableRef = useRef(false);
+  const controlLockUntilRef = useRef(0);
   const nextProjectileId = useRef(1);
   const nextImpactId = useRef(1);
   const [projectiles, setProjectiles] = useState<ProjectileState[]>([]);
@@ -283,6 +310,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             blockingRef={blockingRef}
             invulnerableRef={invulnerableRef}
             lockedTargetRef={lockedTargetRef}
+            controlLockUntilRef={controlLockUntilRef}
             onSound={onSound}
             onEnemyHit={damageEnemy}
           />
@@ -310,6 +338,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
                 onFire={spawnProjectile}
                 onMelee={(direction) => {
                   if (invulnerableRef.current) return;
+                  controlLockUntilRef.current = performance.now() + 320;
                   playerRef.current?.applyImpulse(
                     { x: direction.x * 4.5, y: 2.8, z: direction.z * 4.5 },
                     true,
@@ -323,6 +352,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             <Projectile
               key={projectile.id}
               projectile={projectile}
+              playing={playing}
               blockingRef={blockingRef}
               invulnerableRef={invulnerableRef}
               onRemove={removeProjectile}

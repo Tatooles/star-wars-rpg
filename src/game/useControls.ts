@@ -14,7 +14,6 @@ export type Controls = {
   jumpPresses: number;
   dodgePresses: number;
   attackPresses: number;
-  blockPresses: number;
   lockPresses: number;
   interactPresses: number;
 };
@@ -33,7 +32,6 @@ const initialControls: Controls = {
   jumpPresses: 0,
   dodgePresses: 0,
   attackPresses: 0,
-  blockPresses: 0,
   lockPresses: 0,
   interactPresses: 0,
 };
@@ -99,7 +97,6 @@ export function useControls(enabled: boolean) {
       }
       if (event.button === 2) {
         controls.current.block = pressed;
-        if (pressed) controls.current.blockPresses += 1;
       }
     };
     const onContextMenu = (event: MouseEvent) => event.preventDefault();
