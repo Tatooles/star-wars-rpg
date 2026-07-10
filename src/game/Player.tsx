@@ -1,8 +1,6 @@
 import { useFrame } from "@react-three/fiber";
 import {
   CapsuleCollider,
-  CuboidCollider,
-  RapierCollider,
   RapierRigidBody,
   RigidBody,
 } from "@react-three/rapier";
@@ -57,7 +55,6 @@ export function Player({
   const hitThisSwing = useRef(new Set<string>());
   const dodgeTime = useRef(0);
   const dodgeCooldown = useRef(0);
-  const saberCollider = useRef<RapierCollider>(null);
   const pose = useRef<CombatPose>({
     attacking: false,
     attackProgress: 0,
@@ -104,7 +101,6 @@ export function Player({
     dodgeCooldown.current = 0;
     blockingRef.current = false;
     invulnerableRef.current = false;
-    saberCollider.current?.setEnabled(false);
     lastJumpPress.current = controls.current.jumpPresses;
     lastAttackPress.current = controls.current.attackPresses;
     lastDodgePress.current = controls.current.dodgePresses;
@@ -193,17 +189,12 @@ export function Player({
     pose.current.blocking = input.block && attackTime.current <= 0;
     pose.current.dodging = dodgeTime.current > 0;
     blockingRef.current = pose.current.blocking;
-    const attackColliderEnabled =
-      pose.current.attacking &&
-      pose.current.attackProgress >= PLAYER_TUNING.attackHitWindow.start &&
-      pose.current.attackProgress <= PLAYER_TUNING.attackHitWindow.end;
     reportCombatState({
       attacking: pose.current.attacking,
       blocking: pose.current.blocking,
       dodging: pose.current.dodging,
       comboStep: comboStep.current as 0 | 1 | 2,
     });
-    saberCollider.current?.setEnabled(attackColliderEnabled);
   });
 
   return (
@@ -219,24 +210,6 @@ export function Player({
       name="player"
     >
       <CapsuleCollider args={[0.62, 0.43]} position={[0, 0.12, 0]} />
-      <CuboidCollider
-        ref={saberCollider}
-        args={[
-          PLAYER_TUNING.attackHalfExtents.width,
-          PLAYER_TUNING.attackHalfExtents.height,
-          PLAYER_TUNING.attackHalfExtents.depth,
-        ]}
-        position={[0, 0.35, PLAYER_TUNING.attackReach]}
-        sensor
-        onIntersectionEnter={({ other }) => {
-          if (
-            !pose.current.attacking ||
-            pose.current.attackProgress < PLAYER_TUNING.attackHitWindow.start ||
-            pose.current.attackProgress > PLAYER_TUNING.attackHitWindow.end
-          ) return;
-          resolveEnemyHit(other.rigidBodyObject?.name);
-        }}
-      />
       <group ref={model}>
         <AnakinModel moving={moving} combatPose={pose} />
       </group>
