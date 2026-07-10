@@ -1,4 +1,4 @@
-import { forwardRef, RefObject, useImperativeHandle } from "react";
+import { forwardRef, memo, RefObject, useImperativeHandle } from "react";
 import * as THREE from "three";
 import { useAnimatedModel } from "./useAnimatedModel";
 
@@ -12,7 +12,7 @@ type ImportedCharacterProps = {
   desiredClip: RefObject<string>;
 };
 
-export const ImportedCharacter = forwardRef<ImportedCharacterHandle, ImportedCharacterProps>(
+export const ImportedCharacter = memo(forwardRef<ImportedCharacterHandle, ImportedCharacterProps>(
   function ImportedCharacter({ url, desiredClip }, ref) {
     const scene = useAnimatedModel(url, desiredClip);
     useImperativeHandle(ref, () => ({
@@ -32,4 +32,4 @@ export const ImportedCharacter = forwardRef<ImportedCharacterHandle, ImportedCha
       </group>
     );
   },
-);
+));

@@ -289,6 +289,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
   const enemyPositions = useRef(new Map<string, THREE.Vector3>());
   const lockedTargetPositionRef = useRef<THREE.Vector3>(null);
   const sceneRef = useRef<THREE.Scene>(null);
+  const sessionRef = useRef(session);
   const yawRef = useRef(Math.PI) as MutableRefObject<number>;
   const { controls } = useControls(playing);
   const blockingRef = useRef(false);
@@ -300,6 +301,10 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
   const [impacts, setImpacts] = useState<ImpactState[]>([]);
   const [beaconNearby, setBeaconNearby] = useState(false);
   const defer = useDeferredQueue();
+
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
 
   const dispatchSession = useCallback(
     (action: SessionAction) => {
@@ -328,8 +333,9 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
       const origin = new THREE.Vector3(playerPosition.x, playerPosition.y + 0.65, playerPosition.z);
       const ray = new THREE.Raycaster();
       let nearest: { id: string; score: number } | null = null;
-      for (const enemy of session.enemies) {
-        if (!enemy.alive || enemy.encounter > session.activeEncounter) continue;
+      const currentSession = sessionRef.current;
+      for (const enemy of currentSession.enemies) {
+        if (!enemy.alive || enemy.encounter > currentSession.activeEncounter) continue;
         const position = enemyPositions.current.get(enemy.id);
         if (!position) continue;
         const toEnemy = new THREE.Vector3(
@@ -361,13 +367,13 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
           });
         if (obstruction) continue;
 
-        const lockedBonus = enemy.id === session.lockedTargetId ? -range : 0;
+        const lockedBonus = enemy.id === currentSession.lockedTargetId ? -range : 0;
         const score = distance + (1 - facing) * range + lockedBonus;
         if (!nearest || score < nearest.score) nearest = { id: enemy.id, score };
       }
       return nearest?.id ?? null;
     },
-    [session.activeEncounter, session.enemies, session.lockedTargetId],
+    [],
   );
 
   const removeProjectile = useCallback((id: number) => {
@@ -414,7 +420,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
 
   const damageEnemy = useCallback(
     (enemyId: string, amount: number) => {
-      const enemy = session.enemies.find((candidate) => candidate.id === enemyId);
+      const enemy = sessionRef.current.enemies.find((candidate) => candidate.id === enemyId);
       const position = enemyPositions.current.get(enemyId);
       if (enemy?.alive && position) {
         const impactId = nextImpactId.current++;
@@ -428,7 +434,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
       onSound("impact");
       dispatchSession({ type: "DAMAGE_ENEMY", enemyId, amount });
     },
-    [defer, dispatchSession, onSound, session.enemies],
+    [defer, dispatchSession, onSound],
   );
 
   const encounterOneAlive = session.enemies.some((enemy) => enemy.encounter === 1 && enemy.alive);
@@ -526,6 +532,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             <Projectile
               key={projectile.id}
               projectile={projectile}
+              playerRef={playerRef}
               playing={playing}
               blockingRef={blockingRef}
               invulnerableRef={invulnerableRef}

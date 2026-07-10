@@ -4,7 +4,7 @@ import {
   RapierRigidBody,
   RigidBody,
 } from "@react-three/rapier";
-import { RefObject, useCallback, useEffect, useRef } from "react";
+import { memo, RefObject, useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { AnakinModel, type CombatPose } from "./AnakinModel";
 import { PLAYER_TUNING } from "./combatTuning";
@@ -34,7 +34,7 @@ type PlayerProps = {
   onSound: (cue: SoundCue) => void;
 };
 
-export function Player({
+export const Player = memo(function Player({
   bodyRef,
   cameraYaw,
   controls,
@@ -236,4 +236,4 @@ export function Player({
       </group>
     </RigidBody>
   );
-}
+});

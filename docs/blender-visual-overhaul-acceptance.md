@@ -8,10 +8,10 @@ Reference: [`blender-visual-overhaul-handoff.md`](./blender-visual-overhaul-hand
 
 ## Result
 
-The visual-overhaul implementation is complete, but this audit remains pending
-one final runtime gate: repeat the 1920×1080 production measurement after the
-review-driven character fidelity pass. The Mac locked before that repeat could
-run, and a throttled locked-screen sample is not valid performance evidence.
+Pass. The complete integrated scene, sustained four-B1 reflection fixture, and
+B2/beacon reflection fixture all cleared the 60 FPS target at 1920×1080 after
+the review-driven character fidelity pass. All profiling fixtures were removed
+before the final repository gates and commit.
 
 ## Asset and Blender audit
 
@@ -81,32 +81,28 @@ Visual review images:
 Hardware: MacBook Pro `Mac15,6`, Apple M3 Pro (11-core CPU, 14-core GPU), 18 GB
 memory. Viewport: 1920×1080. Production Vite preview, full local asset set.
 
-| Metric | Measured |
-| --- | ---: |
-| FPS | 120 |
-| Average frame time | 8.3 ms |
-| p95 frame time | 8.5 ms |
-| Maximum sampled frame time | 10.1 ms |
-| Rendered triangles | 106,790 |
-| Draw calls | 660 |
-| GPU geometries | 210 |
-| GPU textures | 3 |
-| Shader programs | 7 |
+| Scenario | Average FPS | Average frame | p95 frame | Max frame | Draw calls | Triangles | Geometries | Textures | Programs |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Traversal / complete loaded scene | 69.4 | 14.4 ms | 17.8 ms | 29.4 ms | 914 | 159,750 | 260 | 3 | 7 |
+| Four-B1 sustained block/reflection | 69.2 | 14.4 ms | 17.3 ms | 22.6 ms | 920 | 159,822 | 268 | 3 | 7 |
+| B2/beacon sustained block/reflection | 93.3 | 10.7 ms | 13.3 ms | 47.0 ms | 334 | 80,296 | 245 | 3 | 9 |
 
-This telemetry was captured immediately before the review-driven character
-fidelity pass. That pass brought the final visible scene to approximately 134k
-triangles while preserving the same
-materials, animation mixers, lights, and effects. A repeat capture was attempted,
-but the Mac locked and the browser was throttled to 1 FPS; that throttled result
-was discarded rather than presented as a GPU measurement.
+Each row is a production-build 240-frame telemetry window with the browser
+isolated from prior WebGL tabs. The traversal sample mounts the complete
+environment, all eight shared-source B1 instances, the B2, Anakin, beacon,
+HUD-linked indicators, lights, shadows, and atmosphere. The encounter fixtures
+exercise the real projectile, procedural-audio, reflection, damage, hit
+animation, and impact-burst paths; they alter only initial placement, encounter
+state, and health so each scenario can be sampled continuously. Those fixture
+changes were reverted immediately after capture.
 
-This section is therefore baseline evidence, not the final performance pass.
-The production scene mounts the complete environment, all eight shared-source
-B1 instances, the B2, Anakin, beacon, HUD-linked indicators, lights, shadows,
-and atmosphere. Attack and dodge were exercised live without dropping below
-the 60 FPS acceptance threshold. The 120 FPS / 8.3 ms baseline leaves a full
-frame of headroom at 60 Hz for projectile/reflection and encounter AI work.
-No shader-compilation spike appeared in the 240-frame sustained sample.
+The first half-second samples after a cold scenario start varied while WebGL
+programs and assets warmed (the lowest individual counter reading was 56 FPS in
+the loaded traversal scene and 59 FPS in the B2 fixture). Sustained 240-frame
+windows remained above target, geometry and texture counts stabilized, and no
+continuing shader-compilation stutter appeared. The lightweight projectile path
+uses shared geometry/material resources and direct distance checks; completed
+impact bursts hide and unregister once, preventing the earlier effect buildup.
 
 ## Browser compatibility
 

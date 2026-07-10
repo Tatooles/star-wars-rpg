@@ -1,6 +1,6 @@
 import { useFrame } from "@react-three/fiber";
 import { CapsuleCollider, RapierRigidBody, RigidBody } from "@react-three/rapier";
-import { RefObject, useRef } from "react";
+import { memo, RefObject, useRef } from "react";
 import * as THREE from "three";
 import type { EnemyState } from "./session";
 import { B1_TUNING } from "./combatTuning";
@@ -25,7 +25,7 @@ type B1DroidProps = {
   onFire: (spawn: ProjectileSpawn) => void;
 };
 
-export function B1Droid({
+export const B1Droid = memo(function B1Droid({
   enemy,
   playerRef,
   playing,
@@ -157,4 +157,4 @@ export function B1Droid({
       />
     </RigidBody>
   );
-}
+});

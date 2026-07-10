@@ -1,6 +1,6 @@
 import { useGLTF } from "@react-three/drei";
 import { CuboidCollider, RigidBody } from "@react-three/rapier";
-import { useEffect, useMemo } from "react";
+import { memo, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { GAME_ASSETS } from "./assetManifest";
@@ -37,7 +37,7 @@ function OutpostVisuals() {
   return <primitive object={scene} />;
 }
 
-export function Outpost() {
+export const Outpost = memo(function Outpost() {
   return (
     <group>
       <OutpostVisuals />
@@ -59,4 +59,4 @@ export function Outpost() {
       </RigidBody>
     </group>
   );
-}
+});

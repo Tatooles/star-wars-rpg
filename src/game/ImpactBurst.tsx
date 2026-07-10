@@ -11,8 +11,10 @@ type ImpactBurstProps = {
 export function ImpactBurst({ position, destructive, onComplete }: ImpactBurstProps) {
   const group = useRef<THREE.Group>(null);
   const age = useRef(0);
+  const completed = useRef(false);
 
   useFrame((_, delta) => {
+    if (completed.current) return;
     age.current += delta;
     if (group.current) {
       const scale = 0.35 + age.current * (destructive ? 5.5 : 3.2);
@@ -24,7 +26,11 @@ export function ImpactBurst({ position, destructive, onComplete }: ImpactBurstPr
         }
       });
     }
-    if (age.current > 0.42) onComplete();
+    if (age.current > 0.42) {
+      completed.current = true;
+      if (group.current) group.current.visible = false;
+      onComplete();
+    }
   });
 
   return (
@@ -40,7 +46,12 @@ export function ImpactBurst({ position, destructive, onComplete }: ImpactBurstPr
           rotation={[index * 0.7, index * 1.3, index * 0.4]}
         >
           <tetrahedronGeometry args={[destructive ? 0.18 : 0.11, 0]} />
-          <meshBasicMaterial color={index % 2 === 0 ? "#ff7a35" : "#8ad8ff"} transparent toneMapped={false} />
+          <meshBasicMaterial
+            color={index % 2 === 0 ? "#ff7a35" : "#8ad8ff"}
+            transparent
+            depthWrite={false}
+            toneMapped={false}
+          />
         </mesh>
       ))}
     </group>

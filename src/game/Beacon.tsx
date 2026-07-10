@@ -1,13 +1,13 @@
 import { useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { GAME_ASSETS } from "./assetManifest";
 
 type BeaconProps = { disabled: boolean };
 
-export function Beacon({ disabled }: BeaconProps) {
+export const Beacon = memo(function Beacon({ disabled }: BeaconProps) {
   const gltf = useGLTF(GAME_ASSETS.beacon);
   const scene = useMemo(() => clone(gltf.scene), [gltf.scene]);
   const beam = useRef<THREE.Mesh>(null);
@@ -49,4 +49,4 @@ export function Beacon({ disabled }: BeaconProps) {
       <pointLight ref={light} color={disabled ? "#60717c" : "#ff472d"} intensity={12} distance={16} position={[0, 3, 0]} />
     </group>
   );
-}
+});

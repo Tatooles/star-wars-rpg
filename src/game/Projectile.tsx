@@ -1,6 +1,7 @@
 import { useFrame } from "@react-three/fiber";
-import { BallCollider, RapierRigidBody, RigidBody } from "@react-three/rapier";
+import type { RapierRigidBody } from "@react-three/rapier";
 import { RefObject, useRef } from "react";
+import * as THREE from "three";
 import { PROJECTILE_TUNING } from "./combatTuning";
 
 export type ProjectileState = {
@@ -13,6 +14,7 @@ export type ProjectileState = {
 
 type ProjectileProps = {
   projectile: ProjectileState;
+  playerRef: RefObject<RapierRigidBody | null>;
   playing: boolean;
   blockingRef: RefObject<boolean>;
   invulnerableRef: RefObject<boolean>;
@@ -22,8 +24,32 @@ type ProjectileProps = {
   onEnemyHit: (enemyId: string, damage: number) => void;
 };
 
+const boltCoreGeometry = new THREE.CapsuleGeometry(0.055, 0.42, 4, 8);
+const boltGlowGeometry = new THREE.CapsuleGeometry(0.11, 0.48, 4, 8);
+const boltMaterials = {
+  hostileCore: new THREE.MeshBasicMaterial({ color: "#ff4a2e", toneMapped: false }),
+  reflectedCore: new THREE.MeshBasicMaterial({ color: "#63baff", toneMapped: false }),
+  hostileGlow: new THREE.MeshBasicMaterial({
+    color: "#ff3d1d",
+    transparent: true,
+    opacity: 0.24,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    toneMapped: false,
+  }),
+  reflectedGlow: new THREE.MeshBasicMaterial({
+    color: "#168dff",
+    transparent: true,
+    opacity: 0.24,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    toneMapped: false,
+  }),
+} as const;
+
 export function Projectile({
   projectile,
+  playerRef,
   playing,
   blockingRef,
   invulnerableRef,
@@ -32,13 +58,20 @@ export function Projectile({
   onPlayerHit,
   onEnemyHit,
 }: ProjectileProps) {
-  const body = useRef<RapierRigidBody>(null);
+  const group = useRef<THREE.Group>(null);
+  const position = useRef(new THREE.Vector3(...projectile.position));
+  const previousPosition = useRef(new THREE.Vector3());
+  const movement = useRef(new THREE.Vector3());
+  const playerPoint = useRef(new THREE.Vector3());
+  const playerOffset = useRef(new THREE.Vector3());
+  const closestPoint = useRef(new THREE.Vector3());
   const age = useRef(0);
   const reflectedAge = useRef(0);
   const resolved = useRef(false);
+  const reflectionRequested = useRef(false);
 
   useFrame((_, delta) => {
-    if (!playing || !body.current || resolved.current) return;
+    if (!playing || resolved.current) return;
     age.current += delta;
     if (projectile.reflected) {
       reflectedAge.current += delta;
@@ -54,61 +87,69 @@ export function Projectile({
       onRemove(projectile.id);
       return;
     }
-    const position = body.current.translation();
-    body.current.setNextKinematicTranslation({
-      x: position.x + projectile.direction[0] * delta * (projectile.reflected ? PROJECTILE_TUNING.reflectedSpeed : PROJECTILE_TUNING.speed),
-      y: position.y + projectile.direction[1] * delta * (projectile.reflected ? PROJECTILE_TUNING.reflectedSpeed : PROJECTILE_TUNING.speed),
-      z: position.z + projectile.direction[2] * delta * (projectile.reflected ? PROJECTILE_TUNING.reflectedSpeed : PROJECTILE_TUNING.speed),
-    });
+    const speed = projectile.reflected ? PROJECTILE_TUNING.reflectedSpeed : PROJECTILE_TUNING.speed;
+    previousPosition.current.copy(position.current);
+    movement.current.set(...projectile.direction).multiplyScalar(delta * speed);
+    position.current.add(movement.current);
+    group.current?.position.copy(position.current);
+
+    if (!projectile.reflected && !reflectionRequested.current) {
+      const playerPosition = playerRef.current?.translation();
+      if (playerPosition) {
+        playerPoint.current.set(playerPosition.x, playerPosition.y + 0.2, playerPosition.z);
+        const movementLengthSq = movement.current.lengthSq();
+        const closestT = movementLengthSq > 0
+          ? THREE.MathUtils.clamp(
+              playerOffset.current
+                .copy(playerPoint.current)
+                .sub(previousPosition.current)
+                .dot(movement.current) /
+                movementLengthSq,
+              0,
+              1,
+            )
+          : 0;
+        closestPoint.current
+          .copy(previousPosition.current)
+          .addScaledVector(movement.current, closestT);
+        if (closestPoint.current.distanceToSquared(playerPoint.current) <= 0.72 ** 2) {
+          if (blockingRef.current) {
+            reflectionRequested.current = true;
+            onReflect(projectile.id, position.current.toArray());
+          } else {
+            resolved.current = true;
+            if (!invulnerableRef.current) {
+              onPlayerHit(
+                projectile.sourceId === "b2-guardian"
+                  ? PROJECTILE_TUNING.b2Damage
+                  : PROJECTILE_TUNING.b1Damage,
+              );
+            }
+            onRemove(projectile.id);
+          }
+        }
+      }
+    }
   });
 
   return (
-    <RigidBody
-      ref={body}
-      type="kinematicPosition"
-      colliders={false}
+    <group
+      ref={group}
       position={projectile.position}
       name={`projectile-${projectile.id}`}
     >
-      <BallCollider
-        args={[0.16]}
-        sensor
-        onIntersectionEnter={({ other }) => {
-          if (resolved.current) return;
-          const name = other.rigidBodyObject?.name;
-          if (name === "player" && !projectile.reflected) {
-            if (blockingRef.current) {
-              const position = body.current?.translation();
-              if (position) onReflect(projectile.id, [position.x, position.y, position.z]);
-            } else {
-              resolved.current = true;
-              if (!invulnerableRef.current) {
-                onPlayerHit(
-                  projectile.sourceId === "b2-guardian"
-                    ? PROJECTILE_TUNING.b2Damage
-                    : PROJECTILE_TUNING.b1Damage,
-                );
-              }
-              onRemove(projectile.id);
-            }
-          }
-          if (name?.startsWith("enemy-") && projectile.reflected && name !== `enemy-${projectile.sourceId}`) return;
-          if (name === `enemy-${projectile.sourceId}` && projectile.reflected) {
-            resolved.current = true;
-            onEnemyHit(projectile.sourceId, PROJECTILE_TUNING.reflectedDamage);
-            onRemove(projectile.id);
-          }
-        }}
-      />
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <capsuleGeometry args={[0.055, 0.42, 4, 8]} />
-        <meshBasicMaterial color={projectile.reflected ? "#63baff" : "#ff4a2e"} toneMapped={false} />
-      </mesh>
-      <pointLight
-        color={projectile.reflected ? "#168dff" : "#ff3d1d"}
-        intensity={4}
-        distance={2.5}
-      />
-    </RigidBody>
+      <group dispose={null}>
+        <mesh
+          geometry={boltCoreGeometry}
+          material={projectile.reflected ? boltMaterials.reflectedCore : boltMaterials.hostileCore}
+          rotation={[Math.PI / 2, 0, 0]}
+        />
+        <mesh
+          geometry={boltGlowGeometry}
+          material={projectile.reflected ? boltMaterials.reflectedGlow : boltMaterials.hostileGlow}
+          rotation={[Math.PI / 2, 0, 0]}
+        />
+      </group>
+    </group>
   );
 }

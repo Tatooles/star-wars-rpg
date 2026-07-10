@@ -1,5 +1,5 @@
 import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
+import { memo, useRef } from "react";
 import * as THREE from "three";
 
 const dustPositions = (() => {
@@ -17,7 +17,7 @@ const dustPositions = (() => {
   return values;
 })();
 
-export function Atmosphere() {
+export const Atmosphere = memo(function Atmosphere() {
   const dust = useRef<THREE.Points>(null);
 
   useFrame((_, delta) => {
@@ -53,4 +53,4 @@ export function Atmosphere() {
       </mesh>
     </group>
   );
-}
+});

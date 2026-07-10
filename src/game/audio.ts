@@ -66,6 +66,10 @@ export class ProceduralAudio {
         gain.gain.exponentialRampToValueAtTime(0.1, now + delay + 0.035);
         gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.35);
         oscillator.connect(gain).connect(master);
+        oscillator.onended = () => {
+          oscillator.disconnect();
+          gain.disconnect();
+        };
         oscillator.start(now + delay);
         oscillator.stop(now + delay + 0.38);
       });
@@ -103,6 +107,10 @@ export class ProceduralAudio {
     gain.gain.setValueAtTime(volume, now);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
     oscillator.connect(gain).connect(master);
+    oscillator.onended = () => {
+      oscillator.disconnect();
+      gain.disconnect();
+    };
     oscillator.start(now);
     oscillator.stop(now + duration + 0.02);
   }
@@ -123,6 +131,11 @@ export class ProceduralAudio {
     gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + duration);
     source.buffer = buffer;
     source.connect(filter).connect(gain).connect(master);
+    source.onended = () => {
+      source.disconnect();
+      filter.disconnect();
+      gain.disconnect();
+    };
     source.start();
   }
 
