@@ -23,6 +23,7 @@ import type { GameSession, PlayerCombatState, SessionAction } from "./session";
 import { useControls, type Controls } from "./useControls";
 import type { SoundCue } from "./audio";
 import { B2_TUNING, PLAYER_TUNING } from "./combatTuning";
+import { summarizeFrameTimes } from "./renderMetrics";
 
 type GameSceneProps = {
   playing: boolean;
@@ -260,6 +261,28 @@ function EncounterGate({ z }: { z: number }) {
   );
 }
 
+function RenderMetricsProbe() {
+  const { gl } = useThree();
+  const frameTimes = useRef<number[]>([]);
+
+  useFrame((_, delta) => {
+    const samples = frameTimes.current;
+    samples.push(delta * 1_000);
+    if (samples.length < 240) return;
+    const summary = summarizeFrameTimes(samples);
+    samples.length = 0;
+    document.documentElement.dataset.renderMetrics = JSON.stringify({
+      ...summary,
+      drawCalls: gl.info.render.calls,
+      triangles: gl.info.render.triangles,
+      geometries: gl.info.memory.geometries,
+      textures: gl.info.memory.textures,
+      shaderPrograms: gl.info.programs?.length ?? 0,
+    });
+  });
+  return null;
+}
+
 export function GameScene({ playing, session, dispatch, onSound }: GameSceneProps) {
   const playerRef = useRef<RapierRigidBody>(null);
   const enemyBodies = useRef(new Map<string, RapierRigidBody>());
@@ -428,6 +451,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
         <color attach="background" args={["#141719"]} />
         <fog attach="fog" args={["#292723", 30, 100]} />
         <Atmosphere />
+        <RenderMetricsProbe />
         <hemisphereLight args={["#9eb7c8", "#3b251a", 1.8]} />
         <directionalLight
           castShadow

@@ -161,4 +161,36 @@ describe("game session", () => {
   it("formats completion times beyond one minute", () => {
     expect(formatMissionTime(125_900)).toBe("02:05");
   });
+
+  it("completes the full mission sequence and replays from a clean run", () => {
+    let session = sessionReducer(createSession(), { type: "START_MISSION", nowMs: 1_000 });
+    session = sessionReducer(session, { type: "ACTIVATE_ENCOUNTER", encounter: 1 });
+    for (const id of ["b1-1", "b1-2", "b1-3", "b1-4"]) session = defeatEnemy(session, id);
+    session = sessionReducer(session, { type: "ACTIVATE_ENCOUNTER", encounter: 2 });
+    for (const id of ["b1-5", "b1-6", "b1-7", "b1-8"]) session = defeatEnemy(session, id);
+    session = sessionReducer(session, { type: "ACTIVATE_ENCOUNTER", encounter: 3 });
+    session = defeatEnemy(session, "b2-guardian");
+    session = sessionReducer(session, { type: "DISABLE_BEACON", nowMs: 181_000 });
+
+    expect(session).toMatchObject({
+      screen: "complete",
+      activeEncounter: 3,
+      enemiesDefeated: 9,
+      beaconDisabled: true,
+      objective: "Mission complete",
+      player: { level: 3, xp: 300 },
+      missionTimer: { completedInMs: 180_000 },
+    });
+
+    const replay = sessionReducer(session, { type: "START_MISSION", nowMs: 200_000 });
+    expect(replay).toMatchObject({
+      screen: "playing",
+      activeEncounter: 0,
+      enemiesDefeated: 0,
+      beaconDisabled: false,
+      objective: "Reach the Separatist beacon",
+      player: { health: 100, level: 1, xp: 0 },
+    });
+    expect(replay.enemies.every((enemy) => enemy.alive)).toBe(true);
+  });
 });

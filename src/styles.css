@@ -52,6 +52,8 @@ h1, h2 { font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
   text-transform: uppercase; cursor: pointer; transition: transform .16s ease, box-shadow .16s ease;
 }
 .primary-action:hover { transform: translateY(-2px); box-shadow: 0 0 32px rgba(79, 168, 255, .32); }
+.primary-action:disabled { cursor: wait; opacity: .55; transform: none; box-shadow: none; }
+.asset-loading-status { margin: .8rem 0 0; color: #7591ad; font-size: .64rem; letter-spacing: .18em; }
 .secondary-action { color: #c5d1de; background: transparent; border-color: #44515f; }
 
 .controls-card { border: 1px solid rgba(138, 163, 190, .21); background: rgba(7, 13, 21, .72); padding: 1.5rem; backdrop-filter: blur(10px); }

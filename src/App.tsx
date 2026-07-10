@@ -7,6 +7,9 @@ import { createSession, formatMissionTime, sessionReducer } from "./game/session
 const GameScene = lazy(() =>
   import("./game/GameScene").then((module) => ({ default: module.GameScene })),
 );
+const AssetPreloader = lazy(() =>
+  import("./game/AssetPreloader").then((module) => ({ default: module.AssetPreloader })),
+);
 
 const controls = [
   ["W / S", "Forward / backpedal"],
@@ -21,6 +24,7 @@ const controls = [
 export function App() {
   const [session, dispatch] = useReducer(sessionReducer, undefined, () => createSession());
   const [audio] = useState(() => new ProceduralAudio());
+  const [assetsReady, setAssetsReady] = useState(false);
   const previousHealth = useRef(session.player.health);
   const previousDefeats = useRef(session.enemiesDefeated);
   const previousLevelUps = useRef(session.levelUpCount);
@@ -92,6 +96,9 @@ export function App() {
       </div>
 
       <div className="desktop-experience">
+        <Suspense fallback={null}>
+          <AssetPreloader onReady={() => setAssetsReady(true)} />
+        </Suspense>
         <div className="stars" aria-hidden="true" />
         <div className="horizon" aria-hidden="true" />
         <FpsCounter />
@@ -109,9 +116,10 @@ export function App() {
                 As Anakin Skywalker, breach the outpost, destroy its droid
                 defenders, and silence the signal.
               </p>
-              <button className="primary-action" onClick={startMission}>
-                Start Mission <span aria-hidden="true">→</span>
+              <button className="primary-action" onClick={startMission} disabled={!assetsReady}>
+                {assetsReady ? "Start Mission" : "Loading Mission"} <span aria-hidden="true">→</span>
               </button>
+              {!assetsReady && <p className="asset-loading-status">PREPARING LOCAL ASSETS...</p>}
             </div>
 
             <aside className="controls-card" aria-label="Controls">
