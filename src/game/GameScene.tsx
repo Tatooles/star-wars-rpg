@@ -5,6 +5,7 @@ import {
   MutableRefObject,
   RefObject,
   useCallback,
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -37,6 +38,26 @@ type ImpactState = {
 };
 
 const BEACON_INTERACTION_RANGE = 7.5;
+
+function useDeferredQueue() {
+  const pendingTimers = useRef(new Set<number>());
+
+  useEffect(() => {
+    const timers = pendingTimers.current;
+    return () => {
+      for (const timer of timers) window.clearTimeout(timer);
+      timers.clear();
+    };
+  }, []);
+
+  return useCallback((callback: () => void) => {
+    const timer = window.setTimeout(() => {
+      pendingTimers.current.delete(timer);
+      callback();
+    }, 0);
+    pendingTimers.current.add(timer);
+  }, []);
+}
 
 type MissionDirectorProps = {
   controls: RefObject<Controls>;
@@ -208,6 +229,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
   const playerRef = useRef<RapierRigidBody>(null);
   const enemyBodies = useRef(new Map<string, RapierRigidBody>());
   const lockedTargetRef = useRef<RapierRigidBody>(null);
+  const sceneRef = useRef<THREE.Scene>(null);
   const yawRef = useRef(Math.PI) as MutableRefObject<number>;
   const { controls, setMouseButton, releaseMouseButtons } = useControls(playing);
   const blockingRef = useRef(false);
@@ -218,12 +240,13 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
   const [projectiles, setProjectiles] = useState<ProjectileState[]>([]);
   const [impacts, setImpacts] = useState<ImpactState[]>([]);
   const [beaconNearby, setBeaconNearby] = useState(false);
+  const defer = useDeferredQueue();
 
   const dispatchSession = useCallback(
     (action: SessionAction) => {
-      window.setTimeout(() => dispatch(action), 0);
+      defer(() => dispatch(action));
     },
-    [dispatch],
+    [defer, dispatch],
   );
 
   const updateCombatState = useCallback(
@@ -243,19 +266,48 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
       const player = playerRef.current;
       if (!player) return null;
       const playerPosition = player.translation();
-      let nearest: { id: string; distance: number } | null = null;
+      const rotation = player.rotation();
+      const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(
+        new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w),
+      );
+      const origin = new THREE.Vector3(playerPosition.x, playerPosition.y + 0.65, playerPosition.z);
+      const ray = new THREE.Raycaster();
+      let nearest: { id: string; score: number } | null = null;
       for (const enemy of session.enemies) {
         if (!enemy.alive || enemy.encounter > session.activeEncounter) continue;
         const body = enemyBodies.current.get(enemy.id);
         if (!body) continue;
         const position = body.translation();
-        const distance = Math.hypot(
+        const toEnemy = new THREE.Vector3(
           position.x - playerPosition.x,
+          0,
           position.z - playerPosition.z,
         );
-        if (distance <= range && (!nearest || distance < nearest.distance)) {
-          nearest = { id: enemy.id, distance };
-        }
+        const distance = toEnemy.length();
+        if (distance > range || distance < 0.01) continue;
+        toEnemy.normalize();
+        const facing = forward.dot(toEnemy);
+        if (facing < PLAYER_TUNING.attackFacingThreshold) continue;
+
+        const target = new THREE.Vector3(position.x, position.y + 0.7, position.z);
+        const line = target.clone().sub(origin);
+        ray.set(origin, line.clone().normalize());
+        ray.far = line.length();
+        const obstruction = ray
+          .intersectObjects(sceneRef.current?.children ?? [], true)
+          .find((hit) => {
+            let object: THREE.Object3D | null = hit.object;
+            while (object) {
+              if (object.userData.cameraObstacle) return true;
+              object = object.parent;
+            }
+            return false;
+          });
+        if (obstruction) continue;
+
+        const lockedBonus = body === lockedTargetRef.current ? -range : 0;
+        const score = distance + (1 - facing) * range + lockedBonus;
+        if (!nearest || score < nearest.score) nearest = { id: enemy.id, score };
       }
       return nearest?.id ?? null;
     },
@@ -263,11 +315,10 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
   );
 
   const removeProjectile = useCallback((id: number) => {
-    window.setTimeout(
+    defer(
       () => setProjectiles((current) => current.filter((projectile) => projectile.id !== id)),
-      0,
     );
-  }, []);
+  }, [defer]);
 
   const spawnProjectile = useCallback((spawn: ProjectileSpawn) => {
     onSound("blaster");
@@ -279,13 +330,13 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
       direction: spawn.direction.toArray(),
       reflected: false,
     };
-    window.setTimeout(() => setProjectiles((current) => [...current, projectile]), 0);
-  }, [onSound]);
+    defer(() => setProjectiles((current) => [...current, projectile]));
+  }, [defer, onSound]);
 
   const reflectProjectile = useCallback(
     (id: number, projectilePosition: [number, number, number]) => {
       onSound("reflect");
-      window.setTimeout(
+      defer(
         () => setProjectiles((current) =>
           current.map((projectile) => {
             if (projectile.id !== id) return projectile;
@@ -300,10 +351,9 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             return { ...projectile, reflected: true, direction: direction.toArray() };
           }),
         ),
-        0,
       );
     },
-    [onSound],
+    [defer, onSound],
   );
 
   const damageEnemy = useCallback(
@@ -318,12 +368,12 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
           position: [position.x, position.y + 0.8, position.z],
           destructive: amount >= enemy.health,
         };
-        window.setTimeout(() => setImpacts((current) => [...current, impact]), 0);
+        defer(() => setImpacts((current) => [...current, impact]));
       }
       onSound("impact");
       dispatchSession({ type: "DAMAGE_ENEMY", enemyId, amount });
     },
-    [dispatchSession, onSound, session.enemies],
+    [defer, dispatchSession, onSound, session.enemies],
   );
 
   const encounterOneAlive = session.enemies.some((enemy) => enemy.encounter === 1 && enemy.alive);
@@ -347,7 +397,8 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
         camera={{ fov: 54, near: 0.08, far: 180, position: [2.4, 4.5, 25] }}
         dpr={[1, 1.7]}
         gl={{ antialias: true, powerPreference: "high-performance" }}
-        onCreated={({ gl }) => {
+        onCreated={({ gl, scene }) => {
+          sceneRef.current = scene;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.08;
         }}
@@ -453,7 +504,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             lockedTargetRef={lockedTargetRef}
             session={session}
             dispatch={dispatchSession}
-            setBeaconNearby={(nearby) => window.setTimeout(() => setBeaconNearby(nearby), 0)}
+            setBeaconNearby={(nearby) => defer(() => setBeaconNearby(nearby))}
           />
         </Physics>
         {impacts.map((impact) => (
@@ -461,9 +512,8 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             key={impact.id}
             position={impact.position}
             destructive={impact.destructive}
-            onComplete={() => window.setTimeout(
+            onComplete={() => defer(
               () => setImpacts((current) => current.filter((candidate) => candidate.id !== impact.id)),
-              0,
             )}
           />
         ))}

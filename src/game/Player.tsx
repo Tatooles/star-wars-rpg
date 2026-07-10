@@ -177,14 +177,20 @@ export function Player({
       attackTime.current = attackDuration.current;
       hitThisSwing.current.clear();
       onSound((`swing${comboStep.current + 1}`) as SoundCue);
-      const assistedEnemyId = getAssistedEnemyId(PLAYER_TUNING.targetAssistRange);
-      resolveEnemyHit(assistedEnemyId ? `enemy-${assistedEnemyId}` : undefined);
     }
     lastAttackPress.current = input.attackPresses;
     attackTime.current = Math.max(0, attackTime.current - delta);
     const progress = 1 - attackTime.current / attackDuration.current;
     pose.current.attacking = attackTime.current > 0;
     pose.current.attackProgress = THREE.MathUtils.clamp(progress, 0, 1);
+    if (
+      pose.current.attacking &&
+      pose.current.attackProgress >= PLAYER_TUNING.attackHitWindow.start &&
+      pose.current.attackProgress <= PLAYER_TUNING.attackHitWindow.end
+    ) {
+      const assistedEnemyId = getAssistedEnemyId(PLAYER_TUNING.attackReach);
+      resolveEnemyHit(assistedEnemyId ? `enemy-${assistedEnemyId}` : undefined);
+    }
     pose.current.comboStep = comboStep.current;
     pose.current.blocking = input.block && attackTime.current <= 0;
     pose.current.dodging = dodgeTime.current > 0;

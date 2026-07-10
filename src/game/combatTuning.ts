@@ -6,10 +6,9 @@ export const PLAYER_TUNING = {
   dodgeCooldown: 0.85,
   attackDurations: [0.46, 0.5, 0.62] as const,
   attackDamage: 34,
-  targetAssistRange: 6.5,
   attackHitWindow: { start: 0.14, end: 0.8 },
-  attackReach: 1.65,
-  attackHalfExtents: { width: 1.05, height: 0.82, depth: 1.65 },
+  attackReach: 4.25,
+  attackFacingThreshold: 0.35,
   knockbackRecoveryMs: 320,
 } as const;
 
