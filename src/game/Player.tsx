@@ -120,6 +120,8 @@ export function Player({
     const body = bodyRef.current;
     if (!body || !playing) return;
     const input = controls.current;
+    const bodyPosition = body.translation();
+    const bodyRotation = body.rotation();
     const x = Number(input.right) - Number(input.left);
     const z = Number(input.backward) - Number(input.forward);
     const length = Math.hypot(x, z);
@@ -147,11 +149,10 @@ export function Player({
     }
     const lockedTarget = lockedTargetRef.current;
     if (lockedTarget && !movementLocked) {
-      const playerPosition = body.translation();
       const targetPosition = lockedTarget.translation();
       targetRotation.current = Math.atan2(
-        targetPosition.x - playerPosition.x,
-        targetPosition.z - playerPosition.z,
+        targetPosition.x - bodyPosition.x,
+        targetPosition.z - bodyPosition.z,
       );
     }
     lastDodgePress.current = input.dodgePresses;
@@ -165,8 +166,7 @@ export function Player({
     }
     lastJumpPress.current = input.jumpPresses;
 
-    const currentRotation = body.rotation();
-    const currentYaw = Math.atan2(2 * currentRotation.w * currentRotation.y, 1 - 2 * currentRotation.y ** 2);
+    const currentYaw = Math.atan2(2 * bodyRotation.w * bodyRotation.y, 1 - 2 * bodyRotation.y ** 2);
     const difference = Math.atan2(
       Math.sin(targetRotation.current - currentYaw),
       Math.cos(targetRotation.current - currentYaw),
@@ -192,12 +192,10 @@ export function Player({
       pose.current.attackProgress >= PLAYER_TUNING.attackHitWindow.start &&
       pose.current.attackProgress <= PLAYER_TUNING.attackHitWindow.end
     ) {
-      const position = body.translation();
-      const rotation = body.rotation();
       const assistedEnemyId = getAssistedEnemyId(
         PLAYER_TUNING.attackReach,
-        new THREE.Vector3(position.x, position.y, position.z),
-        new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w),
+        new THREE.Vector3(bodyPosition.x, bodyPosition.y, bodyPosition.z),
+        new THREE.Quaternion(bodyRotation.x, bodyRotation.y, bodyRotation.z, bodyRotation.w),
       );
       resolveEnemyHit(assistedEnemyId ? `enemy-${assistedEnemyId}` : undefined);
     }
