@@ -104,7 +104,7 @@ kbd { min-width: 5.8rem; padding: .35rem .48rem; border: 1px solid #3a4858; bord
   16%, 70% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -75%) scale(1.12); }
 }
-.reticle { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; border: 1px solid rgba(255,255,255,.7); transform: translate(-50%, -50%) rotate(45deg); }
+.reticle { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; border: 1px solid rgba(255,255,255,.7); transform: translate(-50%, -50%) rotate(45deg); pointer-events: none; }
 
 .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(2, 5, 9, .76); backdrop-filter: blur(8px); }
 .overlay-card { display: grid; width: min(28rem, calc(100% - 3rem)); padding: 2.4rem; border: 1px solid #35495c; background: #09101a; gap: .8rem; text-align: center; }
