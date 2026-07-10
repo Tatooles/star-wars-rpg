@@ -9,6 +9,7 @@ export const PLAYER_TUNING = {
   attackHitWindow: { start: 0.14, end: 0.8 },
   attackReach: 4.25,
   attackFacingThreshold: 0.35,
+  targetContactRadius: 0.75,
   knockbackRecoveryMs: 320,
 } as const;
 

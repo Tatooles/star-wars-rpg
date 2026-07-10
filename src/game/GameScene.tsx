@@ -298,11 +298,13 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
 
         const target = new THREE.Vector3(position.x, position.y + 0.7, position.z);
         const line = target.clone().sub(origin);
+        const lineLength = line.length();
         ray.set(origin, line.clone().normalize());
-        ray.far = line.length();
+        ray.far = lineLength;
         const obstruction = ray
           .intersectObjects(sceneRef.current?.children ?? [], true)
           .find((hit) => {
+            if (hit.distance >= lineLength - PLAYER_TUNING.targetContactRadius) return false;
             let object: THREE.Object3D | null = hit.object;
             while (object) {
               if (object.userData.cameraObstacle) return true;
