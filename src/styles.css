@@ -63,8 +63,16 @@ kbd { min-width: 5.8rem; padding: .35rem .48rem; border: 1px solid #3a4858; bord
 
 .game-placeholder { position: absolute; inset: 0; background: #141719; }
 .game-placeholder canvas { display: block; width: 100%; height: 100%; }
-.game-placeholder > p { position: absolute; z-index: 2; margin: 0; left: 2rem; top: 3.05rem; text-shadow: 0 2px 12px #000; }
-.game-placeholder > .objective-label { top: 2rem; }
+.combat-hud { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.health-block, .objective-block { position: absolute; top: 2rem; display: grid; gap: .38rem; text-shadow: 0 2px 12px #000; }
+.health-block { left: 2rem; width: 15rem; }
+.objective-block { right: 2rem; text-align: right; }
+.health-block span, .objective-block span, .target-health span { color: #75bdff; font: 700 .64rem/1 Inter, sans-serif; letter-spacing: .2em; }
+.health-block b, .objective-block b { font-size: .82rem; font-weight: 500; }
+.health-track, .target-track { height: .36rem; overflow: hidden; background: rgba(0, 0, 0, .5); border: 1px solid rgba(255,255,255,.22); }
+.health-track i, .target-track i { display: block; height: 100%; background: linear-gradient(90deg, #3999db, #79d5ff); transition: width .18s ease; }
+.target-health { position: absolute; left: 50%; top: 2rem; width: 15rem; transform: translateX(-50%); display: grid; gap: .38rem; text-align: center; }
+.target-track i { background: linear-gradient(90deg, #ad3e27, #ff7658); }
 .reticle { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; border: 1px solid rgba(255,255,255,.7); transform: translate(-50%, -50%) rotate(45deg); }
 
 .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(2, 5, 9, .76); backdrop-filter: blur(8px); }

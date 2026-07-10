@@ -7,9 +7,10 @@ type CameraRigProps = {
   playerRef: RefObject<RapierRigidBody | null>;
   yawRef: RefObject<number>;
   enabled: boolean;
+  lockedTargetRef?: RefObject<RapierRigidBody | null>;
 };
 
-export function CameraRig({ playerRef, yawRef, enabled }: CameraRigProps) {
+export function CameraRig({ playerRef, yawRef, enabled, lockedTargetRef }: CameraRigProps) {
   const { camera, scene } = useThree();
   const pitch = useRef(-0.2);
   const currentPosition = useRef(new THREE.Vector3(2.4, 4.5, 25));
@@ -30,6 +31,17 @@ export function CameraRig({ playerRef, yawRef, enabled }: CameraRigProps) {
     if (!body) return;
     const translation = body.translation();
     const target = new THREE.Vector3(translation.x, translation.y + 0.75, translation.z);
+    const lockBody = lockedTargetRef?.current;
+    if (lockBody) {
+      const lockPosition = lockBody.translation();
+      const lockAngle = Math.atan2(lockPosition.x - translation.x, lockPosition.z - translation.z);
+      const yawDifference = Math.atan2(
+        Math.sin(lockAngle - yawRef.current),
+        Math.cos(lockAngle - yawRef.current),
+      );
+      yawRef.current += yawDifference * Math.min(1, delta * 5.5);
+      target.lerp(new THREE.Vector3(lockPosition.x, lockPosition.y + 0.6, lockPosition.z), 0.24);
+    }
     const distance = 7.2;
     const flatDistance = Math.cos(pitch.current) * distance;
     const desired = new THREE.Vector3(
