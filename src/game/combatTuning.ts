@@ -1,6 +1,5 @@
 export const PLAYER_TUNING = {
   runSpeed: 7.2,
-  jumpSpeed: 7.4,
   dodgeSpeed: 16,
   dodgeDuration: 0.24,
   dodgeCooldown: 0.85,

@@ -39,7 +39,7 @@ The complete flow must work without a backend, account, save file, downloaded mo
 ### Supported
 
 - Current desktop versions of Chrome, Edge, Firefox, and Safari.
-- Keyboard and mouse.
+- Keyboard controls, with a mouse optional for menus and alternate combat inputs.
 - Static hosting over HTTPS.
 - A single-player, fully client-side session.
 
@@ -80,7 +80,7 @@ Display:
 - A compact controls reference.
 - A prominent **Start Mission** button.
 
-The Start Mission click must initialize/resume audio and capture the mouse for camera control.
+The Start Mission click must initialize/resume audio without requiring pointer capture.
 
 ### 6.2 Mission
 
@@ -98,7 +98,7 @@ Prevent the player from disabling the beacon while its B2 guardian is alive.
 
 ### 6.3 Pause
 
-Escape pauses the game and releases pointer lock. The pause overlay contains:
+Escape pauses the game. The pause overlay contains:
 
 - Resume
 - Restart Mission
@@ -116,30 +116,32 @@ Use these default bindings:
 
 | Action | Input |
 | --- | --- |
-| Move | W/A/S/D |
-| Orbit camera | Mouse |
-| Basic lightsaber attack | Left mouse button |
-| Block / reflect | Hold right mouse button |
+| Move forward | W |
+| Backpedal | S |
+| Orbit camera left / right | A / D |
+| Basic lightsaber attack | Space or left mouse button |
+| Block / reflect | Hold F or right mouse button |
 | Directional dodge | Left Shift while moving |
-| Jump | Space |
 | Toggle target lock | Q |
 | Interact with beacon | E |
-| Pause / release mouse | Escape |
+| Pause | Escape |
 
-Movement is run-speed by default; Version 1 does not need a separate walk or sprint mode.
+Forward movement is run-speed by default. Backpedaling moves at 75% of forward speed. Version 1 does not need jumping or a separate walk or sprint mode.
 
 Inputs should be ignored while a blocking menu or completion screen is open.
 
 ## 8. Camera and Movement
 
 - Use a slightly over-the-right-shoulder third-person camera.
-- Mouse movement freely orbits around Anakin during normal traversal.
-- The player character moves relative to the camera direction.
+- Keep the camera at a fixed vertical pitch. Mouse movement must not affect it.
+- Holding A or D horizontally orbits the camera at a constant 120 degrees per second, with no acceleration or easing.
+- Anakin's movement heading responds to camera yaw immediately, while his visible body turns smoothly to follow it.
+- W moves Anakin forward along that heading. S always backpedals without turning him around. Holding movement and camera-turn keys together produces a smooth curved path.
 - The camera must not pass through terrain, walls, rocks, or structures. If blocked, it moves closer to Anakin and smoothly returns to its normal distance when space becomes available.
-- When target lock is active, the camera should keep Anakin and the selected enemy readable in frame.
+- When target lock is active, it overrides A/D input and keeps Anakin facing the selected enemy while the camera keeps both characters readable in frame. W advances toward the target and S backpedals away.
 - Target lock should prefer a living enemy near the center of the view and within a reasonable combat range.
 - Losing range, line of sight for too long, or killing the target clears or advances the lock cleanly.
-- Movement, dodge, jump, and camera behavior must remain responsive throughout combat.
+- Movement, dodge, and camera behavior must remain responsive throughout combat.
 
 ## 9. Combat
 
@@ -302,7 +304,7 @@ Implement and verify in this order:
 
 - Create the rocky outpost gray box.
 - Add Anakin placeholder/stylized geometry.
-- Implement movement, jumping, Rapier collision, over-shoulder camera, pointer lock, and camera collision.
+- Implement forward/backpedal movement, Rapier collision, the keyboard-steered over-shoulder camera, and camera collision.
 
 ### Milestone 3 — Combat slice
 
@@ -351,8 +353,9 @@ The implementation is complete only when all of the following are true:
 - [ ] A fresh dependency install and production build complete successfully.
 - [ ] Desktop load shows the title, briefing, controls, and Start Mission action.
 - [ ] A phone-sized/coarse-pointer visit shows only the desktop-required experience.
-- [ ] Starting captures the mouse and enables audio without browser autoplay errors.
-- [ ] WASD movement, mouse camera, jump, dodge, attack, block, lock-on, interaction, and pause all work.
+- [ ] Starting enables audio without browser autoplay errors or pointer capture.
+- [ ] W/S movement, A/D camera turning, dodge, keyboard attack/block, optional mouse-button attack/block, lock-on, interaction, and pause all work.
+- [ ] Mouse movement never changes the camera.
 - [ ] The camera avoids clipping through major level geometry.
 - [ ] Anakin cannot walk through solid level boundaries or fall out of the playable area.
 - [ ] The basic three-hit combo produces reliable hits and readable feedback.
@@ -366,7 +369,7 @@ The implementation is complete only when all of the following are true:
 - [ ] The beacon cannot be disabled before the B2 is defeated.
 - [ ] Disabling the beacon reaches the completion screen with accurate run statistics.
 - [ ] Death, restart, and replay each create a clean level-1 run.
-- [ ] Escape pauses gameplay, releases the mouse, and can resume cleanly.
+- [ ] Escape pauses gameplay and can resume cleanly.
 - [ ] Gameplay and menus have no repeating console errors or unhandled exceptions.
 - [ ] The mission is reasonably completable by a first-time player in 3–5 minutes.
 - [ ] No runtime asset depends on an external model, music, or sound URL.

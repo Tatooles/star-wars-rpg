@@ -7,12 +7,11 @@ const GameScene = lazy(() =>
 );
 
 const controls = [
-  ["W A S D", "Move"],
-  ["Mouse", "Orbit camera"],
-  ["Left click", "Lightsaber"],
-  ["Right click", "Block / reflect"],
+  ["W / S", "Forward / backpedal"],
+  ["A / D", "Turn camera"],
+  ["Space / LMB", "Lightsaber"],
+  ["F / RMB", "Block / reflect"],
   ["Shift", "Dodge"],
-  ["Space", "Jump"],
   ["Q", "Target lock"],
   ["E", "Interact"],
 ] as const;
@@ -36,12 +35,10 @@ export function App() {
   const startMission = useCallback(() => {
     void audio.start().catch(() => undefined);
     dispatch({ type: "START_MISSION" });
-    document.documentElement.requestPointerLock?.().catch(() => undefined);
   }, [audio]);
 
   const pause = useCallback(() => {
     if (screen !== "playing") return;
-    document.exitPointerLock?.();
     void audio.suspend().catch(() => undefined);
     dispatch({ type: "PAUSE" });
   }, [audio, screen]);
@@ -49,12 +46,7 @@ export function App() {
   const resume = useCallback(() => {
     void audio.resume().catch(() => undefined);
     dispatch({ type: "RESUME" });
-    document.documentElement.requestPointerLock?.().catch(() => undefined);
   }, [audio]);
-
-  useEffect(() => {
-    if (screen === "defeated" || screen === "complete") document.exitPointerLock?.();
-  }, [screen]);
 
   useEffect(() => {
     if (session.player.health < previousHealth.current) audio.play("hurt");
@@ -129,13 +121,16 @@ export function App() {
                   </div>
                 ))}
               </div>
-              <p className="controls-note">ESC to pause and release mouse</p>
+              <p className="controls-note">ESC to pause</p>
             </aside>
           </section>
         )}
 
         {(screen === "playing" || screen === "paused" || screen === "defeated") && (
-          <section className="game-placeholder" aria-label="Mission in progress">
+          <section
+            className={`game-placeholder${screen === "playing" ? " is-playing" : ""}`}
+            aria-label="Mission in progress"
+          >
             <Suspense fallback={<div className="mission-loading">INITIALIZING MISSION...</div>}>
               <GameScene
                 key={session.runId}
@@ -192,7 +187,7 @@ export function App() {
               <button className="secondary-action" onClick={startMission}>
                 Restart Mission
               </button>
-              <p className="controls-note">WASD move · Mouse look · LMB attack · RMB block · Q lock</p>
+              <p className="controls-note">W/S move · A/D turn · Space attack · F block · Q lock</p>
             </div>
           </section>
         )}

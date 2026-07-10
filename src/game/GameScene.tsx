@@ -547,6 +547,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
         <CameraRig
           playerRef={playerRef}
           yawRef={yawRef}
+          controls={controls}
           enabled={playing}
           lockedTargetRef={lockedTargetRef}
         />

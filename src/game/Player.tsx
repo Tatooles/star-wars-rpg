@@ -8,6 +8,7 @@ import { RefObject, useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { AnakinModel, type CombatPose } from "./AnakinModel";
 import { PLAYER_TUNING } from "./combatTuning";
+import { resolveMovementFrame } from "./controlModel";
 import type { PlayerCombatState } from "./session";
 import type { Controls } from "./useControls";
 import type { SoundCue } from "./audio";
@@ -49,7 +50,6 @@ export function Player({
 }: PlayerProps) {
   const model = useRef<THREE.Group>(null);
   const moving = useRef(false);
-  const lastJumpPress = useRef(0);
   const lastAttackPress = useRef(0);
   const lastDodgePress = useRef(0);
   const targetRotation = useRef(Math.PI);
@@ -105,7 +105,6 @@ export function Player({
     dodgeCooldown.current = 0;
     blockingRef.current = false;
     invulnerableRef.current = false;
-    lastJumpPress.current = controls.current.jumpPresses;
     lastAttackPress.current = controls.current.attackPresses;
     lastDodgePress.current = controls.current.dodgePresses;
     pose.current.attacking = false;
@@ -122,48 +121,40 @@ export function Player({
     const input = controls.current;
     const bodyPosition = body.translation();
     const bodyRotation = body.rotation();
-    const x = Number(input.right) - Number(input.left);
-    const z = Number(input.backward) - Number(input.forward);
-    const length = Math.hypot(x, z);
+    const targetPosition = lockedTargetPositionRef.current;
+    const movement = resolveMovementFrame({
+      cameraYaw: cameraYaw.current,
+      playerPosition: bodyPosition,
+      lockedTargetPosition: targetPosition,
+      forward: input.forward,
+      backward: input.backward,
+    });
     const velocity = body.linvel();
-    moving.current = length > 0.01;
+    moving.current = movement.speedMultiplier > 0;
     const movementLocked = performance.now() < controlLockUntilRef.current;
+    targetRotation.current = movement.facingYaw;
 
-    if (!movementLocked && length > 0) {
-      const localAngle = Math.atan2(x, -z);
-      const worldAngle = cameraYaw.current + localAngle;
+    if (!movementLocked && movement.speedMultiplier > 0) {
       const wantsDodge = input.dodgePresses !== lastDodgePress.current && dodgeCooldown.current <= 0;
       if (wantsDodge) {
         dodgeTime.current = PLAYER_TUNING.dodgeDuration;
         dodgeCooldown.current = PLAYER_TUNING.dodgeCooldown;
         onSound("dodge");
       }
-      const speed = dodgeTime.current > 0 ? PLAYER_TUNING.dodgeSpeed : PLAYER_TUNING.runSpeed;
+      const speed = dodgeTime.current > 0
+        ? PLAYER_TUNING.dodgeSpeed
+        : PLAYER_TUNING.runSpeed * movement.speedMultiplier;
       body.setLinvel(
-        { x: Math.sin(worldAngle) * speed, y: velocity.y, z: Math.cos(worldAngle) * speed },
+        { x: movement.directionX * speed, y: velocity.y, z: movement.directionZ * speed },
         true,
       );
-      targetRotation.current = worldAngle;
     } else if (!movementLocked) {
       body.setLinvel({ x: 0, y: velocity.y, z: 0 }, true);
-    }
-    const targetPosition = lockedTargetPositionRef.current;
-    if (targetPosition && !movementLocked) {
-      targetRotation.current = Math.atan2(
-        targetPosition.x - bodyPosition.x,
-        targetPosition.z - bodyPosition.z,
-      );
     }
     lastDodgePress.current = input.dodgePresses;
     dodgeTime.current = Math.max(0, dodgeTime.current - delta);
     dodgeCooldown.current = Math.max(0, dodgeCooldown.current - delta);
     invulnerableRef.current = dodgeTime.current > 0;
-
-    const grounded = Math.abs(velocity.y) < 0.08;
-    if (input.jumpPresses !== lastJumpPress.current && grounded) {
-      body.setLinvel({ x: body.linvel().x, y: PLAYER_TUNING.jumpSpeed, z: body.linvel().z }, true);
-    }
-    lastJumpPress.current = input.jumpPresses;
 
     const currentYaw = Math.atan2(2 * bodyRotation.w * bodyRotation.y, 1 - 2 * bodyRotation.y ** 2);
     const difference = Math.atan2(
