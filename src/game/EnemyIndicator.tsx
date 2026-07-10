@@ -5,6 +5,7 @@ import type { EnemyKind, EnemyState } from "./session";
 type EnemyIndicatorProps = {
   enemy: EnemyState;
   locked: boolean;
+  showHealthBar?: boolean;
 };
 
 type EnemyIndicatorLayout = {
@@ -32,31 +33,34 @@ const layouts: Record<EnemyKind, EnemyIndicatorLayout> = {
 export function EnemyIndicator({
   enemy,
   locked,
+  showHealthBar = true,
 }: EnemyIndicatorProps) {
   const { barPositionY, barWidth, groundPositionY, ringRadius } = layouts[enemy.kind];
   const { fill, centerX } = getHealthBarLayout(enemy.health, enemy.maxHealth);
 
   return (
     <>
-      <Billboard position={[0, barPositionY, 0]} renderOrder={10}>
-        <mesh>
-          <planeGeometry args={[barWidth + 0.08, 0.18]} />
-          <meshBasicMaterial color="#dbe7f2" toneMapped={false} depthWrite={false} />
-        </mesh>
-        <mesh position={[0, 0, 0.004]}>
-          <planeGeometry args={[barWidth, 0.1]} />
-          <meshBasicMaterial color="#190d0b" toneMapped={false} depthWrite={false} />
-        </mesh>
-        {fill > 0 && (
-          <mesh
-            position={[centerX * barWidth, 0, 0.008]}
-            scale={[fill, 1, 1]}
-          >
-            <planeGeometry args={[barWidth, 0.1]} />
-            <meshBasicMaterial color="#ed4a32" toneMapped={false} depthWrite={false} />
+      {showHealthBar && (
+        <Billboard position={[0, barPositionY, 0]} renderOrder={10}>
+          <mesh>
+            <planeGeometry args={[barWidth + 0.08, 0.18]} />
+            <meshBasicMaterial color="#dbe7f2" toneMapped={false} depthWrite={false} />
           </mesh>
-        )}
-      </Billboard>
+          <mesh position={[0, 0, 0.004]}>
+            <planeGeometry args={[barWidth, 0.1]} />
+            <meshBasicMaterial color="#190d0b" toneMapped={false} depthWrite={false} />
+          </mesh>
+          {fill > 0 && (
+            <mesh
+              position={[centerX * barWidth, 0, 0.008]}
+              scale={[fill, 1, 1]}
+            >
+              <planeGeometry args={[barWidth, 0.1]} />
+              <meshBasicMaterial color="#ed4a32" toneMapped={false} depthWrite={false} />
+            </mesh>
+          )}
+        </Billboard>
+      )}
 
       {locked && (
         <mesh

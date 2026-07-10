@@ -74,6 +74,17 @@ kbd { min-width: 5.8rem; padding: .35rem .48rem; border: 1px solid #3a4858; bord
 .health-block b, .objective-block b { font-size: .82rem; font-weight: 500; }
 .health-track { height: .36rem; overflow: hidden; background: rgba(0, 0, 0, .5); border: 1px solid rgba(255,255,255,.22); }
 .health-track i { display: block; height: 100%; background: linear-gradient(90deg, #3999db, #79d5ff); transition: width .18s ease; }
+.boss-health { position: absolute; left: 50%; top: 1.35rem; width: min(32rem, 38vw); transform: translateX(-50%); display: grid; gap: .55rem; padding: .7rem 1rem .85rem; border: 1px solid rgba(255, 107, 79, .48); background: linear-gradient(180deg, rgba(31, 11, 9, .9), rgba(8, 10, 14, .82)); box-shadow: 0 0 32px rgba(222, 57, 35, .14), inset 0 1px rgba(255, 198, 178, .08); text-shadow: 0 2px 12px #000; }
+.boss-health::before, .boss-health::after { content: ""; position: absolute; top: -.24rem; width: 3.4rem; height: .2rem; background: #ef5a3e; box-shadow: 0 0 12px rgba(239, 90, 62, .7); }
+.boss-health::before { left: 1.2rem; }
+.boss-health::after { right: 1.2rem; }
+.boss-health-header { display: flex; align-items: end; justify-content: space-between; gap: 1.5rem; }
+.boss-health-copy { display: grid; gap: .22rem; text-align: left; }
+.boss-health-copy span { color: #ff7658; font: 700 .56rem/1 Inter, sans-serif; letter-spacing: .24em; }
+.boss-health-copy b { color: #f5eee9; font-size: .78rem; letter-spacing: .09em; }
+.boss-health-header strong { color: #d7c8c1; font-size: .7rem; font-weight: 600; white-space: nowrap; }
+.boss-health-track { height: .52rem; overflow: hidden; border: 1px solid rgba(255, 188, 168, .34); background: rgba(10, 2, 2, .82); }
+.boss-health-track i { display: block; height: 100%; background: linear-gradient(90deg, #9d291e, #ef5a3e 72%, #ff9478); box-shadow: 0 0 16px rgba(239, 90, 62, .36); transition: width .2s ease; }
 .progression-hud { position: absolute; left: 50%; bottom: 1.7rem; display: flex; align-items: center; gap: .8rem; transform: translateX(-50%); }
 .level-medallion { width: 3.6rem; height: 3.6rem; display: grid; place-content: center; border: 1px solid rgba(117, 189, 255, .6); transform: rotate(45deg); background: rgba(4, 10, 17, .78); text-align: center; }
 .level-medallion > * { transform: rotate(-45deg); }

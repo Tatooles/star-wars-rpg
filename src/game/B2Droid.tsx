@@ -142,6 +142,7 @@ export function B2Droid({
       <EnemyIndicator
         enemy={enemy}
         locked={locked}
+        showHealthBar={!active}
       />
     </RigidBody>
   );
