@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { ProceduralAudio, type SoundCue } from "./game/audio";
 import { getActiveBoss } from "./game/bossHudModel";
+import { FpsCounter } from "./game/FpsCounter";
 import { createSession, formatMissionTime, sessionReducer } from "./game/session";
 
 const GameScene = lazy(() =>
@@ -93,6 +94,7 @@ export function App() {
       <div className="desktop-experience">
         <div className="stars" aria-hidden="true" />
         <div className="horizon" aria-hidden="true" />
+        <FpsCounter />
 
         {screen === "title" && (
           <section className="title-screen">
