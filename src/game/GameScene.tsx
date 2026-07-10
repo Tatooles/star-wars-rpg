@@ -65,6 +65,7 @@ type MissionDirectorProps = {
   enemyBodies: RefObject<Map<string, RapierRigidBody>>;
   enemyPositions: RefObject<Map<string, THREE.Vector3>>;
   lockedTargetRef: RefObject<RapierRigidBody | null>;
+  lockedTargetPositionRef: RefObject<THREE.Vector3 | null>;
   session: GameSession;
   dispatch: Dispatch<SessionAction>;
   setBeaconNearby: (nearby: boolean) => void;
@@ -76,6 +77,7 @@ function MissionDirector({
   enemyBodies,
   enemyPositions,
   lockedTargetRef,
+  lockedTargetPositionRef,
   session,
   dispatch,
   setBeaconNearby,
@@ -148,6 +150,9 @@ function MissionDirector({
       ? enemyBodies.current.get(session.lockedTargetId) ?? null
       : null;
     lockedTargetRef.current = lockedBody;
+    lockedTargetPositionRef.current = session.lockedTargetId
+      ? enemyPositions.current.get(session.lockedTargetId) ?? null
+      : null;
     if (session.lockedTargetId) {
       const lockedEnemy = session.enemies.find((enemy) => enemy.id === session.lockedTargetId);
       if (!lockedEnemy?.alive || !lockedBody) {
@@ -241,6 +246,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
   const enemyBodies = useRef(new Map<string, RapierRigidBody>());
   const enemyPositions = useRef(new Map<string, THREE.Vector3>());
   const lockedTargetRef = useRef<RapierRigidBody>(null);
+  const lockedTargetPositionRef = useRef<THREE.Vector3>(null);
   const sceneRef = useRef<THREE.Scene>(null);
   const yawRef = useRef(Math.PI) as MutableRefObject<number>;
   const { controls, setMouseButton, releaseMouseButtons } = useControls(playing);
@@ -438,7 +444,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             damageMultiplier={session.player.damageMultiplier}
             blockingRef={blockingRef}
             invulnerableRef={invulnerableRef}
-            lockedTargetRef={lockedTargetRef}
+            lockedTargetPositionRef={lockedTargetPositionRef}
             controlLockUntilRef={controlLockUntilRef}
             getAssistedEnemyId={getAssistedEnemyId}
             onSound={onSound}
@@ -511,6 +517,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             enemyBodies={enemyBodies}
             enemyPositions={enemyPositions}
             lockedTargetRef={lockedTargetRef}
+            lockedTargetPositionRef={lockedTargetPositionRef}
             session={session}
             dispatch={dispatchSession}
             setBeaconNearby={(nearby) => defer(() => setBeaconNearby(nearby))}

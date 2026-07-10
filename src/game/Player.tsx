@@ -20,7 +20,7 @@ type PlayerProps = {
   damageMultiplier: number;
   blockingRef: RefObject<boolean>;
   invulnerableRef: RefObject<boolean>;
-  lockedTargetRef: RefObject<RapierRigidBody | null>;
+  lockedTargetPositionRef: RefObject<THREE.Vector3 | null>;
   controlLockUntilRef: RefObject<number>;
   getAssistedEnemyId: (
     range: number,
@@ -40,7 +40,7 @@ export function Player({
   damageMultiplier,
   blockingRef,
   invulnerableRef,
-  lockedTargetRef,
+  lockedTargetPositionRef,
   controlLockUntilRef,
   getAssistedEnemyId,
   onEnemyHit,
@@ -147,9 +147,8 @@ export function Player({
     } else if (!movementLocked) {
       body.setLinvel({ x: 0, y: velocity.y, z: 0 }, true);
     }
-    const lockedTarget = lockedTargetRef.current;
-    if (lockedTarget && !movementLocked) {
-      const targetPosition = lockedTarget.translation();
+    const targetPosition = lockedTargetPositionRef.current;
+    if (targetPosition && !movementLocked) {
       targetRotation.current = Math.atan2(
         targetPosition.x - bodyPosition.x,
         targetPosition.z - bodyPosition.z,
