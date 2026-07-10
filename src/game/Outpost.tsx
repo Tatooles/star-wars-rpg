@@ -1,5 +1,6 @@
 import { CuboidCollider, RigidBody } from "@react-three/rapier";
 import * as THREE from "three";
+import { RAISED_PLATFORM } from "./outpostGround";
 
 const rockMaterial = new THREE.MeshStandardMaterial({ color: "#4b4038", roughness: 0.96 });
 const groundMaterial = new THREE.MeshStandardMaterial({ color: "#312c29", roughness: 1 });
@@ -74,8 +75,20 @@ export function Outpost() {
 
       <Obstacle position={[-5.7, 1.8, -5]} size={[1.1, 4.6, 8]} material={metalMaterial} />
       <Obstacle position={[5.7, 1.8, -5]} size={[1.1, 4.6, 8]} material={metalMaterial} />
-      <mesh material={metalMaterial} position={[0, 0.15, -22]} receiveShadow userData={{ cameraObstacle: true }}>
-        <cylinderGeometry args={[8.6, 9.1, 0.5, 12]} />
+      <mesh
+        material={metalMaterial}
+        position={[RAISED_PLATFORM.centerX, RAISED_PLATFORM.centerY, RAISED_PLATFORM.centerZ]}
+        receiveShadow
+        userData={{ cameraObstacle: true }}
+      >
+        <cylinderGeometry
+          args={[
+            RAISED_PLATFORM.topRadius,
+            RAISED_PLATFORM.bottomRadius,
+            RAISED_PLATFORM.height,
+            12,
+          ]}
+        />
       </mesh>
       <RigidBody type="fixed" colliders="cuboid" position={[0, -0.45, -42]}>
         <mesh material={metalMaterial} receiveShadow userData={{ cameraObstacle: true }}>

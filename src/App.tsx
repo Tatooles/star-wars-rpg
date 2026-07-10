@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { ProceduralAudio, type SoundCue } from "./game/audio";
+import { getActiveBoss } from "./game/bossHudModel";
 import { createSession, formatMissionTime, sessionReducer } from "./game/session";
 
 const GameScene = lazy(() =>
@@ -24,7 +25,7 @@ export function App() {
   const previousLevelUps = useRef(session.levelUpCount);
   const previousScreen = useRef(session.screen);
   const { screen } = session;
-  const lockedEnemy = session.enemies.find((enemy) => enemy.id === session.lockedTargetId);
+  const activeBoss = getActiveBoss(session);
   const xpProgress =
     session.player.level === 1
       ? (session.player.xp / 75) * 100
@@ -152,11 +153,17 @@ export function App() {
                 <span>CURRENT OBJECTIVE</span>
                 <b>{session.objective}</b>
               </div>
-              {lockedEnemy?.alive && (
-                <div className="target-health">
-                  <span>{lockedEnemy.kind === "b1" ? "B1 BATTLE DROID" : "B2 SUPER BATTLE DROID"}</span>
-                  <div className="target-track">
-                    <i style={{ width: `${(lockedEnemy.health / lockedEnemy.maxHealth) * 100}%` }} />
+              {activeBoss && (
+                <div className="boss-health">
+                  <div className="boss-health-header">
+                    <div className="boss-health-copy">
+                      <span>BEACON GUARDIAN</span>
+                      <b>B2 SUPER BATTLE DROID</b>
+                    </div>
+                    <strong>{activeBoss.health} / {activeBoss.maxHealth}</strong>
+                  </div>
+                  <div className="boss-health-track">
+                    <i style={{ width: `${(activeBoss.health / activeBoss.maxHealth) * 100}%` }} />
                   </div>
                 </div>
               )}

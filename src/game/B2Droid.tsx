@@ -5,6 +5,7 @@ import * as THREE from "three";
 import type { ProjectileSpawn } from "./B1Droid";
 import type { EnemyState } from "./session";
 import { B2_TUNING } from "./combatTuning";
+import { EnemyIndicator } from "./EnemyIndicator";
 
 type B2DroidProps = {
   enemy: EnemyState;
@@ -137,13 +138,13 @@ export function B2Droid({
           <cylinderGeometry args={[0.12, 0.18, 0.82, 8]} />
         </mesh>
         <pointLight ref={muzzleFlash} color="#ff3c1f" intensity={0} distance={5} position={[0.68, 0.9, 0.9]} />
-        {locked && (
-          <mesh position={[0, 2.65, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[0.48, 0.035, 7, 28]} />
-            <meshBasicMaterial color="#75bdff" toneMapped={false} />
-          </mesh>
-        )}
       </group>
+      <EnemyIndicator
+        bodyRef={bodyRef}
+        enemy={enemy}
+        locked={locked}
+        showHealthBar={!active}
+      />
     </RigidBody>
   );
 }
