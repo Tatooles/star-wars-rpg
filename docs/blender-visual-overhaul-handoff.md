@@ -109,6 +109,37 @@ public/assets/models/beacon.glb
 
 Blender Python scripts may be added under `art/blender/scripts/` when they make creation or export reproducible. The assets must still be real, editable `.blend` files and visually inspected in Blender and in the game.
 
+## Unattended Blender Execution Safety
+
+Blender 5.1.2 was preflighted on this Mac on 2026-07-10. The desktop GUI, Python API, PBR render, `.blend` save, animated GLB export, and clean-room GLB re-import all work.
+
+One environment-specific failure was found during preflight: launching background Blender inside the default restricted command sandbox produced a deterministic `SIGSEGV` before Python started. Both crash reports ended in Blender's Metal-device startup path (`supports_barycentric_whitelist` / `MTLBackend::metal_is_supported`). The identical commands and full asset smoke test succeeded with normal macOS GPU access, followed by three consecutive unattended launches with exit code `0`.
+
+Treat the following as a mandatory execution contract:
+
+1. Invoke Blender through the absolute executable path:
+
+   ```text
+   /Applications/Blender.app/Contents/MacOS/Blender
+   ```
+
+2. Every CLI/background Blender invocation must use the tool's escalated/normal-GPU execution context (`sandbox_permissions: "require_escalated"`). Do not run `/opt/homebrew/bin/blender --background ...` in the default restricted sandbox.
+3. Before asset work, run this unattended preflight in the safe execution context and require exit code `0`:
+
+   ```bash
+   /Applications/Blender.app/Contents/MacOS/Blender \
+     --background \
+     --factory-startup \
+     --python-expr "import bpy; print('BLENDER_PREFLIGHT_OK', bpy.app.version_string)"
+   ```
+
+4. Prefer bounded, one-shot Blender scripts. Save the editable `.blend` before exporting runtime files; do not make a long unsaved GUI session the only copy of meaningful work.
+5. Export to a temporary GLB path first. Re-import it into a clean Blender scene and verify expected objects, materials, armatures, and actions before replacing the repository's runtime GLB.
+6. Keep `.blend` sources and checkpoint commits frequent enough that a failed process loses only the current bounded operation.
+7. If a Blender process exits nonzero, inspect its output, discard any unvalidated temporary export, and retry once using the required normal-GPU execution context. Do not wait for the user to acknowledge a macOS crash dialog; Codex can dismiss it through Computer Use if necessary and resume from the last validated `.blend`.
+
+This contract avoids the diagnosed crash path and provides unattended recovery if an unrelated Blender failure occurs later.
+
 ## Starting Performance Guardrails
 
 The acceptance target is 60 FPS at 1080p on a recent mainstream laptop, including modern integrated graphics. Measured runtime behavior outranks any individual budget below, but start with these guardrails:
@@ -194,6 +225,7 @@ Completion requires evidence for every item below:
 - Meet the 60 FPS target on representative recent mainstream hardware or provide profiling evidence and continue optimizing until the requirement is satisfied.
 - Check asset payload size, draw calls, triangle count, texture memory, shader compilation stutter, and sustained frame time rather than relying only on an idle FPS reading.
 - Run `pnpm test`, `pnpm lint`, `pnpm build`, and `git diff --check`.
+- Record a successful Blender preflight and clean-room re-import for each final character/environment GLB.
 - Perform a final branch-vs-`main` review after all checkpoint commits.
 
 ## Non-goals
