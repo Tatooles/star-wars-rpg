@@ -3,6 +3,7 @@ import type { RapierRigidBody } from "@react-three/rapier";
 import { RefObject, useRef } from "react";
 import * as THREE from "three";
 import { advanceCameraYaw } from "./controlModel";
+import { resolveCameraLockPosition } from "./cameraTarget";
 import type { Controls } from "./useControls";
 
 type CameraRigProps = {
@@ -10,12 +11,20 @@ type CameraRigProps = {
   yawRef: RefObject<number>;
   controls: RefObject<Controls>;
   enabled: boolean;
-  lockedTargetRef?: RefObject<RapierRigidBody | null>;
+  lockedTargetId: string | null;
+  lockedTargetPositionRef: RefObject<THREE.Vector3 | null>;
 };
 
 const CAMERA_PITCH = -0.2;
 
-export function CameraRig({ playerRef, yawRef, controls, enabled, lockedTargetRef }: CameraRigProps) {
+export function CameraRig({
+  playerRef,
+  yawRef,
+  controls,
+  enabled,
+  lockedTargetId,
+  lockedTargetPositionRef,
+}: CameraRigProps) {
   const { camera, scene } = useThree();
   const currentPosition = useRef(new THREE.Vector3(2.4, 4.5, 25));
   const raycaster = useRef(new THREE.Raycaster());
@@ -26,10 +35,13 @@ export function CameraRig({ playerRef, yawRef, controls, enabled, lockedTargetRe
     const translation = body.translation();
     if (import.meta.env.DEV) document.documentElement.dataset.cameraYaw = yawRef.current.toFixed(3);
     const target = new THREE.Vector3(translation.x, translation.y + 0.75, translation.z);
-    const lockBody = lockedTargetRef?.current;
+    const lockPosition = resolveCameraLockPosition(
+      lockedTargetId,
+      lockedTargetPositionRef.current,
+    );
     const yawBeforeManualTurn = yawRef.current;
     const turningManually = enabled
-      && !lockBody
+      && !lockPosition
       && controls.current.turnLeft !== controls.current.turnRight;
     if (enabled) {
       yawRef.current = advanceCameraYaw({
@@ -37,11 +49,10 @@ export function CameraRig({ playerRef, yawRef, controls, enabled, lockedTargetRe
         deltaSeconds: delta,
         turnLeft: controls.current.turnLeft,
         turnRight: controls.current.turnRight,
-        targetLocked: Boolean(lockBody),
+        targetLocked: Boolean(lockPosition),
       });
     }
-    if (lockBody) {
-      const lockPosition = lockBody.translation();
+    if (lockPosition) {
       const lockAngle = Math.atan2(lockPosition.x - translation.x, lockPosition.z - translation.z);
       const yawDifference = Math.atan2(
         Math.sin(lockAngle - yawRef.current),

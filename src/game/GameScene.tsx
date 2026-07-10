@@ -65,7 +65,6 @@ type MissionDirectorProps = {
   cameraYawRef: RefObject<number>;
   enemyBodies: RefObject<Map<string, RapierRigidBody>>;
   enemyPositions: RefObject<Map<string, THREE.Vector3>>;
-  lockedTargetRef: RefObject<RapierRigidBody | null>;
   lockedTargetPositionRef: RefObject<THREE.Vector3 | null>;
   session: GameSession;
   dispatch: Dispatch<SessionAction>;
@@ -78,7 +77,6 @@ function MissionDirector({
   cameraYawRef,
   enemyBodies,
   enemyPositions,
-  lockedTargetRef,
   lockedTargetPositionRef,
   session,
   dispatch,
@@ -169,7 +167,6 @@ function MissionDirector({
     const lockedBody = session.lockedTargetId
       ? enemyBodies.current.get(session.lockedTargetId) ?? null
       : null;
-    lockedTargetRef.current = lockedBody;
     lockedTargetPositionRef.current = session.lockedTargetId
       ? enemyPositions.current.get(session.lockedTargetId) ?? null
       : null;
@@ -265,7 +262,6 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
   const playerRef = useRef<RapierRigidBody>(null);
   const enemyBodies = useRef(new Map<string, RapierRigidBody>());
   const enemyPositions = useRef(new Map<string, THREE.Vector3>());
-  const lockedTargetRef = useRef<RapierRigidBody>(null);
   const lockedTargetPositionRef = useRef<THREE.Vector3>(null);
   const sceneRef = useRef<THREE.Scene>(null);
   const yawRef = useRef(Math.PI) as MutableRefObject<number>;
@@ -527,7 +523,6 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             cameraYawRef={yawRef}
             enemyBodies={enemyBodies}
             enemyPositions={enemyPositions}
-            lockedTargetRef={lockedTargetRef}
             lockedTargetPositionRef={lockedTargetPositionRef}
             session={session}
             dispatch={dispatchSession}
@@ -549,7 +544,8 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
           yawRef={yawRef}
           controls={controls}
           enabled={playing}
-          lockedTargetRef={lockedTargetRef}
+          lockedTargetId={session.lockedTargetId}
+          lockedTargetPositionRef={lockedTargetPositionRef}
         />
         </Canvas>
       </div>
