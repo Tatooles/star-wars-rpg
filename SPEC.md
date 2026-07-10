@@ -325,6 +325,8 @@ Implement and verify in this order:
 
 Do not start optional polish while an earlier milestone's end-to-end behavior is broken.
 
+After each milestone passes its relevant build and behavior checks, create a local checkpoint commit containing that milestone's work before moving on. Keep the commits focused so an interrupted Goal run can resume safely from the last verified checkpoint. Do not push automatically unless the user explicitly requests it.
+
 ## 17. Non-Goals
 
 Version 1 does not include:
@@ -371,6 +373,6 @@ The implementation is complete only when all of the following are true:
 
 ## 19. Handoff Prompt
 
-Use this prompt when implementation moves to a fresh Codex task:
+Use this Goal prompt when implementation moves to a fresh Codex task:
 
-> Read `SPEC.md` completely and treat it as the source of truth. Implement the game end-to-end without expanding its scope. Work through the milestones in order, preserving working behavior as you go. Use the installed project skills when helpful. Run the production build and verify the full mission in a real desktop browser, plus the mobile-blocked state. Treat every acceptance-checklist item as part of the definition of done. Do not claim completion for behavior you did not actually verify.
+> `/goal` Read `SPEC.md` completely and treat it as the source of truth. Implement the game end-to-end without expanding its scope. Work through the milestones in order, preserving working behavior as you go. After each milestone passes its relevant checks, create a focused local checkpoint commit so the run can resume safely if interrupted; do not push unless explicitly requested. Use the installed project skills when helpful. Run the production build and verify the full mission in a real desktop browser, plus the mobile-blocked state. Treat every acceptance-checklist item as part of the definition of done. Do not claim completion for behavior you did not actually verify.
