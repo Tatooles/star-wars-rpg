@@ -71,11 +71,6 @@ export function useControls(enabled: boolean) {
     },
     [enabled],
   );
-  const releaseMouseButtons = useCallback(() => {
-    controls.current.attack = false;
-    controls.current.block = false;
-  }, []);
-
   useEffect(() => {
     const releaseTimers = new Map<ControlAction, number>();
     const releaseHeldControls = () => {
@@ -117,17 +112,28 @@ export function useControls(enabled: boolean) {
     };
     const keyDown = onKey(true);
     const keyUp = onKey(false);
+    const mouseDown = (event: MouseEvent) => setMouseButton(event.button, true);
+    const mouseUp = (event: MouseEvent) => setMouseButton(event.button, false);
+    const preventContextMenu = (event: MouseEvent) => {
+      if (enabled) event.preventDefault();
+    };
     window.addEventListener("keydown", keyDown);
     window.addEventListener("keyup", keyUp);
+    window.addEventListener("mousedown", mouseDown);
+    window.addEventListener("mouseup", mouseUp);
+    window.addEventListener("contextmenu", preventContextMenu);
     window.addEventListener("blur", releaseHeldControls);
     return () => {
       window.removeEventListener("keydown", keyDown);
       window.removeEventListener("keyup", keyUp);
+      window.removeEventListener("mousedown", mouseDown);
+      window.removeEventListener("mouseup", mouseUp);
+      window.removeEventListener("contextmenu", preventContextMenu);
       window.removeEventListener("blur", releaseHeldControls);
       releaseTimers.forEach((timer) => window.clearTimeout(timer));
       releaseHeldControls();
     };
-  }, [enabled]);
+  }, [enabled, setMouseButton]);
 
-  return { controls, setMouseButton, releaseMouseButtons };
+  return { controls };
 }

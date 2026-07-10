@@ -269,7 +269,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
   const lockedTargetPositionRef = useRef<THREE.Vector3>(null);
   const sceneRef = useRef<THREE.Scene>(null);
   const yawRef = useRef(Math.PI) as MutableRefObject<number>;
-  const { controls, setMouseButton, releaseMouseButtons } = useControls(playing);
+  const { controls } = useControls(playing);
   const blockingRef = useRef(false);
   const invulnerableRef = useRef(false);
   const controlLockUntilRef = useRef(0);
@@ -415,17 +415,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
 
   return (
     <>
-      <div
-        className="canvas-input-surface"
-        onPointerDownCapture={(event) => {
-          setMouseButton(event.button, true);
-        }}
-        onPointerUpCapture={(event) => {
-          setMouseButton(event.button, false);
-        }}
-        onPointerLeave={releaseMouseButtons}
-        onContextMenu={(event) => event.preventDefault()}
-      >
+      <div className="canvas-input-surface">
         <Canvas
         shadows="basic"
         camera={{ fov: 54, near: 0.08, far: 180, position: [2.4, 4.5, 25] }}
