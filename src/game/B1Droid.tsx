@@ -85,6 +85,7 @@ export function B1Droid({
     }
     const next = new THREE.Vector3(position.x, position.y, position.z).addScaledVector(move, delta);
     const encounterBoundary = enemy.encounter === 1 ? -5 : -26;
+    next.x = THREE.MathUtils.clamp(next.x, -4.8, 4.8);
     next.z = Math.max(next.z, encounterBoundary);
     body.setNextKinematicTranslation(next);
     const yaw = Math.atan2(towardPlayer.x, towardPlayer.z);
