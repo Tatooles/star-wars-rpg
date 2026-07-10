@@ -73,6 +73,35 @@ kbd { min-width: 5.8rem; padding: .35rem .48rem; border: 1px solid #3a4858; bord
 .health-track i, .target-track i { display: block; height: 100%; background: linear-gradient(90deg, #3999db, #79d5ff); transition: width .18s ease; }
 .target-health { position: absolute; left: 50%; top: 2rem; width: 15rem; transform: translateX(-50%); display: grid; gap: .38rem; text-align: center; }
 .target-track i { background: linear-gradient(90deg, #ad3e27, #ff7658); }
+.progression-hud { position: absolute; left: 50%; bottom: 1.7rem; display: flex; align-items: center; gap: .8rem; transform: translateX(-50%); }
+.level-medallion { width: 3.6rem; height: 3.6rem; display: grid; place-content: center; border: 1px solid rgba(117, 189, 255, .6); transform: rotate(45deg); background: rgba(4, 10, 17, .78); text-align: center; }
+.level-medallion > * { transform: rotate(-45deg); }
+.level-medallion span { font-size: .48rem; letter-spacing: .12em; color: #75bdff; }
+.level-medallion b { font: 700 1.45rem/1 Impact, sans-serif; }
+.xp-block { width: 15rem; display: grid; gap: .35rem; }
+.xp-block > div:first-child { display: flex; justify-content: space-between; color: #9db1c5; font-size: .58rem; letter-spacing: .16em; }
+.xp-block b { color: white; }
+.xp-track { height: .35rem; overflow: hidden; background: rgba(0,0,0,.62); border: 1px solid rgba(255,255,255,.2); }
+.xp-track i { display: block; height: 100%; background: linear-gradient(90deg, #efad3d, #ffe286); transition: width .3s ease; }
+.level-up-banner { position: absolute; left: 50%; top: 30%; display: grid; text-align: center; transform: translate(-50%, -50%); animation: level-up 2.2s ease-out forwards; text-shadow: 0 0 30px #58afff; }
+.level-up-banner span { color: #8bd1ff; font: 700 .85rem/1 Inter, sans-serif; letter-spacing: .45em; }
+.level-up-banner b { font: 700 7rem/.9 Impact, sans-serif; color: white; }
+.interaction-prompt { position: absolute; left: 50%; bottom: 7.2rem; z-index: 3; transform: translateX(-50%); padding: .7rem 1rem; color: #f4f7fa; background: rgba(4, 10, 17, .82); border: 1px solid rgba(117,189,255,.46); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; }
+.interaction-prompt kbd { min-width: 2rem; margin-right: .55rem; color: #07101a; background: #75bdff; border: 0; }
+.completion-card { width: min(42rem, calc(100% - 3rem)); }
+.completion-card h2 { color: #f0ca5a; font-size: clamp(3.5rem, 8vw, 6rem); }
+.completion-copy { margin: 0 auto 1rem; max-width: 30rem; color: #91a0af; line-height: 1.6; }
+.mission-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin: .6rem 0 1rem; border-block: 1px solid #293743; }
+.mission-stats > div { display: grid; gap: .4rem; padding: 1.2rem .8rem; }
+.mission-stats > div + div { border-left: 1px solid #293743; }
+.mission-stats span { color: #718398; font-size: .58rem; letter-spacing: .16em; }
+.mission-stats b { font: 700 1.65rem/1 Impact, sans-serif; }
+
+@keyframes level-up {
+  0% { opacity: 0; transform: translate(-50%, -30%) scale(.8); }
+  16%, 70% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -75%) scale(1.12); }
+}
 .reticle { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; border: 1px solid rgba(255,255,255,.7); transform: translate(-50%, -50%) rotate(45deg); }
 
 .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(2, 5, 9, .76); backdrop-filter: blur(8px); }

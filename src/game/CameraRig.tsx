@@ -30,6 +30,7 @@ export function CameraRig({ playerRef, yawRef, enabled, lockedTargetRef }: Camer
     const body = playerRef.current;
     if (!body) return;
     const translation = body.translation();
+    if (import.meta.env.DEV) document.documentElement.dataset.cameraYaw = yawRef.current.toFixed(3);
     const target = new THREE.Vector3(translation.x, translation.y + 0.75, translation.z);
     const lockBody = lockedTargetRef?.current;
     if (lockBody) {

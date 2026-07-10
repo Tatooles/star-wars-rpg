@@ -64,12 +64,26 @@ export function useControls(enabled: boolean) {
   const controls = useRef<Controls>({ ...initialControls });
 
   useEffect(() => {
+    const releaseTimers = new Map<ControlAction, number>();
     const reset = () => Object.assign(controls.current, initialControls);
     const onKey = (pressed: boolean) => (event: KeyboardEvent) => {
       const action = keyMap[event.code];
       if (!action || !enabled) return;
       if (action === "jump" || action === "dodge") event.preventDefault();
-      controls.current[action] = pressed;
+      const previousTimer = releaseTimers.get(action);
+      if (previousTimer) window.clearTimeout(previousTimer);
+      const movementAction = action === "forward" || action === "backward" || action === "left" || action === "right";
+      if (!pressed && movementAction) {
+        releaseTimers.set(
+          action,
+          window.setTimeout(() => {
+            controls.current[action] = false;
+            releaseTimers.delete(action);
+          }, 72),
+        );
+      } else {
+        controls.current[action] = pressed;
+      }
       if (pressed && !event.repeat) {
         if (action === "jump") controls.current.jumpPresses += 1;
         if (action === "dodge") controls.current.dodgePresses += 1;
@@ -107,6 +121,7 @@ export function useControls(enabled: boolean) {
       window.removeEventListener("mouseup", mouseUp);
       window.removeEventListener("contextmenu", onContextMenu);
       window.removeEventListener("blur", reset);
+      releaseTimers.forEach((timer) => window.clearTimeout(timer));
       reset();
     };
   }, [enabled]);

@@ -12,18 +12,28 @@ export type ProjectileSpawn = {
 
 type B1DroidProps = {
   enemy: EnemyState;
-  bodyRef: RefObject<RapierRigidBody | null>;
   playerRef: RefObject<RapierRigidBody | null>;
   playing: boolean;
+  active: boolean;
   locked: boolean;
+  registerBody: (enemyId: string, body: RapierRigidBody | null) => void;
   onFire: (spawn: ProjectileSpawn) => void;
 };
 
 const tan = new THREE.MeshStandardMaterial({ color: "#b7a27b", roughness: 0.78, metalness: 0.12 });
 const dark = new THREE.MeshStandardMaterial({ color: "#2a2d2b", roughness: 0.55, metalness: 0.4 });
 
-export function B1Droid({ enemy, bodyRef, playerRef, playing, locked, onFire }: B1DroidProps) {
-  const fireTimer = useRef(1.25);
+export function B1Droid({
+  enemy,
+  playerRef,
+  playing,
+  active,
+  locked,
+  registerBody,
+  onFire,
+}: B1DroidProps) {
+  const bodyRef = useRef<RapierRigidBody>(null);
+  const fireTimer = useRef(1.8 + (Number(enemy.id.split("-")[1]) % 4) * 0.55);
   const telegraph = useRef(0);
   const orbitDirection = useRef(1);
   const engageTime = useRef(0);
@@ -33,7 +43,8 @@ export function B1Droid({ enemy, bodyRef, playerRef, playing, locked, onFire }: 
   useFrame((_, delta) => {
     const body = bodyRef.current;
     const player = playerRef.current;
-    if (!body || !player || !playing || !enemy.alive) return;
+    registerBody(enemy.id, enemy.alive ? body : null);
+    if (!body || !player || !playing || !active || !enemy.alive) return;
     const position = body.translation();
     const playerPosition = player.translation();
     const towardPlayer = new THREE.Vector3(
@@ -62,7 +73,7 @@ export function B1Droid({ enemy, bodyRef, playerRef, playing, locked, onFire }: 
       const muzzle = new THREE.Vector3(position.x, position.y + 1.1, position.z).addScaledVector(towardPlayer, 0.7);
       const target = new THREE.Vector3(playerPosition.x, playerPosition.y + 0.2, playerPosition.z);
       onFire({ position: muzzle, direction: target.sub(muzzle).normalize(), sourceId: enemy.id });
-      fireTimer.current = 2.15 + Math.random() * 0.45;
+      fireTimer.current = 3.6 + Math.random() * 0.8;
       telegraph.current = 0;
       if (Math.random() > 0.68) orbitDirection.current *= -1;
     }

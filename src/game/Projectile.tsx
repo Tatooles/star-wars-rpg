@@ -79,7 +79,9 @@ export function Projectile({
               if (position) onReflect(projectile.id, [position.x, position.y, position.z]);
             } else {
               resolved.current = true;
-              if (!invulnerableRef.current) onPlayerHit(11);
+              if (!invulnerableRef.current) {
+                onPlayerHit(projectile.sourceId === "b2-guardian" ? 4 : 2);
+              }
               onRemove(projectile.id);
             }
           }

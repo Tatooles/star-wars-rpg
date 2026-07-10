@@ -1,11 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { createSession, sessionReducer } from "./session";
+import { createSession, sessionReducer, type GameSession } from "./session";
+
+function activeSession(): GameSession {
+  return { ...createSession("playing"), activeEncounter: 3 };
+}
+
+function defeatEnemy(session: GameSession, enemyId: string) {
+  return sessionReducer(session, { type: "DAMAGE_ENEMY", enemyId, amount: 999 });
+}
 
 describe("game session", () => {
-  it("starts a clean mission run", () => {
+  it("starts a clean run with eight B1s and one B2", () => {
     const dirty = {
       ...createSession("complete", 4),
-      player: { ...createSession().player, health: 12, xp: 175, level: 3 as const },
+      player: { ...createSession().player, health: 12, xp: 300, level: 3 as const },
       enemiesDefeated: 9,
       beaconDisabled: true,
     };
@@ -14,48 +22,60 @@ describe("game session", () => {
 
     expect(started.screen).toBe("playing");
     expect(started.runId).toBe(5);
-    expect(started.player).toEqual({
-      health: 100,
-      maxHealth: 100,
-      level: 1,
-      xp: 0,
-      damageMultiplier: 1,
-    });
-    expect(started.enemies).toHaveLength(1);
-    expect(started.enemies[0]?.alive).toBe(true);
+    expect(started.player).toEqual({ health: 100, maxHealth: 100, level: 1, xp: 0, damageMultiplier: 1 });
+    expect(started.enemies.filter((enemy) => enemy.kind === "b1")).toHaveLength(8);
+    expect(started.enemies.filter((enemy) => enemy.kind === "b2")).toHaveLength(1);
+    expect(started.enemies.every((enemy) => enemy.alive)).toBe(true);
     expect(started.enemiesDefeated).toBe(0);
     expect(started.beaconDisabled).toBe(false);
   });
 
-  it("counts an enemy defeat exactly once and clears its lock", () => {
-    const playing = {
-      ...createSession("playing"),
-      lockedTargetId: "b1-scout",
-    };
-
-    const defeated = sessionReducer(playing, {
-      type: "DAMAGE_ENEMY",
-      enemyId: "b1-scout",
-      amount: 100,
-    });
-    const duplicate = sessionReducer(defeated, {
-      type: "DAMAGE_ENEMY",
-      enemyId: "b1-scout",
-      amount: 100,
-    });
+  it("awards each kill once and clears a defeated target lock", () => {
+    const playing = { ...activeSession(), lockedTargetId: "b1-1" };
+    const defeated = defeatEnemy(playing, "b1-1");
+    const duplicate = defeatEnemy(defeated, "b1-1");
 
     expect(defeated.enemies[0]).toMatchObject({ health: 0, alive: false });
     expect(defeated.enemiesDefeated).toBe(1);
+    expect(defeated.player.xp).toBe(25);
     expect(defeated.lockedTargetId).toBeNull();
     expect(duplicate).toBe(defeated);
   });
 
-  it("defeats Anakin at zero health", () => {
-    const defeated = sessionReducer(createSession("playing"), {
-      type: "DAMAGE_PLAYER",
-      amount: 100,
-    });
+  it("levels at exactly 75 and 175 XP without a full heal", () => {
+    let session = activeSession();
+    session = sessionReducer(session, { type: "DAMAGE_PLAYER", amount: 30 });
+    session = defeatEnemy(session, "b1-1");
+    session = defeatEnemy(session, "b1-2");
+    session = defeatEnemy(session, "b1-3");
 
+    expect(session.player).toMatchObject({ xp: 75, level: 2, health: 90, maxHealth: 120, damageMultiplier: 1.15 });
+
+    session = defeatEnemy(session, "b1-4");
+    session = defeatEnemy(session, "b1-5");
+    session = defeatEnemy(session, "b1-6");
+    session = defeatEnemy(session, "b1-7");
+
+    expect(session.player).toMatchObject({ xp: 175, level: 3, health: 110, maxHealth: 140, damageMultiplier: 1.3 });
+    expect(session.levelUpCount).toBe(2);
+  });
+
+  it("prevents beacon shutdown until the guardian is defeated", () => {
+    const blocked = sessionReducer(activeSession(), { type: "DISABLE_BEACON" });
+    expect(blocked.beaconDisabled).toBe(false);
+
+    let cleared = activeSession();
+    cleared = defeatEnemy(cleared, "b2-guardian");
+    expect(cleared.objective).toBe("Disable the communications beacon");
+
+    const complete = sessionReducer(cleared, { type: "DISABLE_BEACON" });
+    expect(complete.screen).toBe("complete");
+    expect(complete.beaconDisabled).toBe(true);
+    expect(complete.objective).toBe("Mission complete");
+  });
+
+  it("defeats Anakin at zero health", () => {
+    const defeated = sessionReducer(createSession("playing"), { type: "DAMAGE_PLAYER", amount: 100 });
     expect(defeated.player.health).toBe(0);
     expect(defeated.screen).toBe("defeated");
   });

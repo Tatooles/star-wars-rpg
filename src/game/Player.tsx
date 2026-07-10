@@ -24,6 +24,7 @@ type PlayerProps = {
   damageMultiplier: number;
   blockingRef: RefObject<boolean>;
   invulnerableRef: RefObject<boolean>;
+  lockedTargetRef: RefObject<RapierRigidBody | null>;
   onEnemyHit: (enemyId: string, damage: number) => void;
 };
 
@@ -34,6 +35,7 @@ export function Player({
   damageMultiplier,
   blockingRef,
   invulnerableRef,
+  lockedTargetRef,
   onEnemyHit,
 }: PlayerProps) {
   const { world, rapier, rigidBodyStates } = useRapier();
@@ -71,7 +73,7 @@ export function Player({
     moving.current = length > 0.01;
 
     if (length > 0) {
-      const localAngle = Math.atan2(x, z);
+      const localAngle = Math.atan2(x, -z);
       const worldAngle = cameraYaw.current + localAngle;
       const wantsDodge = input.dodgePresses !== lastDodgePress.current && dodgeCooldown.current <= 0;
       if (wantsDodge) {
@@ -86,6 +88,15 @@ export function Player({
       targetRotation.current = worldAngle;
     } else {
       body.setLinvel({ x: 0, y: velocity.y, z: 0 }, true);
+    }
+    const lockedTarget = lockedTargetRef.current;
+    if (lockedTarget) {
+      const playerPosition = body.translation();
+      const targetPosition = lockedTarget.translation();
+      targetRotation.current = Math.atan2(
+        targetPosition.x - playerPosition.x,
+        targetPosition.z - playerPosition.z,
+      );
     }
     lastDodgePress.current = input.dodgePresses;
     dodgeTime.current = Math.max(0, dodgeTime.current - delta);

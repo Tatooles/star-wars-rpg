@@ -49,9 +49,9 @@ export function Outpost() {
       <mesh material={metalMaterial} position={[0, 0.15, -22]} receiveShadow>
         <cylinderGeometry args={[8.6, 9.1, 0.5, 12]} />
       </mesh>
-      <RigidBody type="fixed" colliders="cuboid" position={[0, 0.6, -42]}>
+      <RigidBody type="fixed" colliders="cuboid" position={[0, -0.45, -42]}>
         <mesh material={metalMaterial} receiveShadow userData={{ cameraObstacle: true }}>
-          <boxGeometry args={[18, 1.2, 12]} />
+          <boxGeometry args={[18, 0.9, 12]} />
         </mesh>
       </RigidBody>
 

@@ -16,6 +16,13 @@ const controls = [
 export function App() {
   const [session, dispatch] = useReducer(sessionReducer, undefined, () => createSession());
   const { screen } = session;
+  const lockedEnemy = session.enemies.find((enemy) => enemy.id === session.lockedTargetId);
+  const xpProgress =
+    session.player.level === 1
+      ? (session.player.xp / 75) * 100
+      : session.player.level === 2
+        ? ((session.player.xp - 75) / 100) * 100
+        : 100;
 
   const startMission = useCallback(() => {
     dispatch({ type: "START_MISSION" });
@@ -105,19 +112,34 @@ export function App() {
             <div className="combat-hud">
               <div className="health-block">
                 <span>ANAKIN</span>
-                <div className="health-track"><i style={{ width: `${session.player.health}%` }} /></div>
+                <div className="health-track">
+                  <i style={{ width: `${(session.player.health / session.player.maxHealth) * 100}%` }} />
+                </div>
                 <b>{session.player.health} / {session.player.maxHealth}</b>
               </div>
               <div className="objective-block">
                 <span>CURRENT OBJECTIVE</span>
                 <b>{session.objective}</b>
               </div>
-              {session.lockedTargetId && session.enemies[0]?.alive && (
+              {lockedEnemy?.alive && (
                 <div className="target-health">
-                  <span>B1 BATTLE DROID</span>
+                  <span>{lockedEnemy.kind === "b1" ? "B1 BATTLE DROID" : "B2 SUPER BATTLE DROID"}</span>
                   <div className="target-track">
-                    <i style={{ width: `${(session.enemies[0].health / session.enemies[0].maxHealth) * 100}%` }} />
+                    <i style={{ width: `${(lockedEnemy.health / lockedEnemy.maxHealth) * 100}%` }} />
                   </div>
+                </div>
+              )}
+              <div className="progression-hud">
+                <div className="level-medallion"><span>LEVEL</span><b>{session.player.level}</b></div>
+                <div className="xp-block">
+                  <div><span>EXPERIENCE</span><b>{session.player.level === 3 ? "MAX" : `${session.player.xp} XP`}</b></div>
+                  <div className="xp-track"><i style={{ width: `${xpProgress}%` }} /></div>
+                </div>
+              </div>
+              {session.levelUpCount > 0 && (
+                <div key={session.levelUpCount} className="level-up-banner">
+                  <span>LEVEL UP</span>
+                  <b>{session.player.level}</b>
                 </div>
               )}
             </div>
@@ -145,6 +167,24 @@ export function App() {
               <p className="eyebrow">MISSION FAILED</p>
               <h2 id="defeat-title">Anakin defeated</h2>
               <button className="primary-action" onClick={startMission}>Restart Mission</button>
+            </div>
+          </section>
+        )}
+
+        {screen === "complete" && (
+          <section className="overlay complete-overlay" role="dialog" aria-modal="true" aria-labelledby="complete-title">
+            <div className="overlay-card completion-card">
+              <p className="eyebrow">TRANSMISSION SILENCED</p>
+              <h2 id="complete-title">Mission complete</h2>
+              <p className="completion-copy">
+                The Separatist signal is down. Republic fleet positions are secure.
+              </p>
+              <div className="mission-stats">
+                <div><span>FINAL LEVEL</span><b>{session.player.level}</b></div>
+                <div><span>EXPERIENCE</span><b>{session.player.xp} XP</b></div>
+                <div><span>ENEMIES DEFEATED</span><b>{session.enemiesDefeated}</b></div>
+              </div>
+              <button className="primary-action" onClick={startMission}>Replay Mission</button>
             </div>
           </section>
         )}
