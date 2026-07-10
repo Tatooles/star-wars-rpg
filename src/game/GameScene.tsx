@@ -36,6 +36,8 @@ type ImpactState = {
   destructive: boolean;
 };
 
+const BEACON_INTERACTION_RANGE = 7.5;
+
 type MissionDirectorProps = {
   controls: RefObject<Controls>;
   playerRef: RefObject<RapierRigidBody | null>;
@@ -98,7 +100,9 @@ function MissionDirector({
 
     const guardian = session.enemies.find((enemy) => enemy.kind === "b2");
     const beaconDistance = Math.hypot(playerPosition.x, playerPosition.z + 44);
-    const nearBeacon = Boolean(guardian && !guardian.alive && beaconDistance < 4.8);
+    const nearBeacon = Boolean(
+      guardian && !guardian.alive && beaconDistance < BEACON_INTERACTION_RANGE,
+    );
     if (nearBeacon !== wasNearBeacon.current) {
       wasNearBeacon.current = nearBeacon;
       setBeaconNearby(nearBeacon);
