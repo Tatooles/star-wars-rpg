@@ -24,6 +24,7 @@ type PlayerProps = {
   blockingRef: RefObject<boolean>;
   invulnerableRef: RefObject<boolean>;
   lockedTargetRef: RefObject<RapierRigidBody | null>;
+  lockedTargetId: string | null;
   controlLockUntilRef: RefObject<number>;
   onEnemyHit: (enemyId: string, damage: number) => void;
   onCombatStateChange: (combat: PlayerCombatState) => void;
@@ -39,6 +40,7 @@ export function Player({
   blockingRef,
   invulnerableRef,
   lockedTargetRef,
+  lockedTargetId,
   controlLockUntilRef,
   onEnemyHit,
   onCombatStateChange,
@@ -190,7 +192,7 @@ export function Player({
           targetPosition.z - playerPosition.z,
         );
         if (targetDistance <= PLAYER_TUNING.targetAssistRange) {
-          resolveEnemyHit(rigidBodyStates.get(assistedTarget.handle)?.object.name);
+          resolveEnemyHit(lockedTargetId ? `enemy-${lockedTargetId}` : undefined);
         }
       }
     }

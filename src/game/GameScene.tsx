@@ -317,6 +317,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             blockingRef={blockingRef}
             invulnerableRef={invulnerableRef}
             lockedTargetRef={lockedTargetRef}
+            lockedTargetId={session.lockedTargetId}
             controlLockUntilRef={controlLockUntilRef}
             onSound={onSound}
             onEnemyHit={damageEnemy}
