@@ -366,9 +366,8 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
   const damageEnemy = useCallback(
     (enemyId: string, amount: number) => {
       const enemy = session.enemies.find((candidate) => candidate.id === enemyId);
-      const body = enemyBodies.current.get(enemyId);
-      if (enemy?.alive && body) {
-        const position = body.translation();
+      const position = enemyPositions.current.get(enemyId);
+      if (enemy?.alive && position) {
         const impactId = nextImpactId.current++;
         const impact: ImpactState = {
           id: impactId,
