@@ -18,7 +18,7 @@ import { Outpost } from "./Outpost";
 import { Player } from "./Player";
 import { ImpactBurst } from "./ImpactBurst";
 import { Projectile, type ProjectileState } from "./Projectile";
-import type { GameSession, SessionAction } from "./session";
+import type { GameSession, PlayerCombatState, SessionAction } from "./session";
 import { useControls, type Controls } from "./useControls";
 import type { SoundCue } from "./audio";
 import { B2_TUNING, PLAYER_TUNING } from "./combatTuning";
@@ -207,6 +207,13 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
   const [impacts, setImpacts] = useState<ImpactState[]>([]);
   const [beaconNearby, setBeaconNearby] = useState(false);
 
+  const updateCombatState = useCallback(
+    (combat: PlayerCombatState) => {
+      window.setTimeout(() => dispatch({ type: "SET_COMBAT_STATE", combat }), 0);
+    },
+    [dispatch],
+  );
+
   const registerEnemyBody = useCallback((enemyId: string, body: RapierRigidBody | null) => {
     if (body) enemyBodies.current.set(enemyId, body);
     else enemyBodies.current.delete(enemyId);
@@ -321,7 +328,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
             controlLockUntilRef={controlLockUntilRef}
             onSound={onSound}
             onEnemyHit={damageEnemy}
-            onCombatStateChange={(combat) => dispatch({ type: "SET_COMBAT_STATE", combat })}
+            onCombatStateChange={updateCombatState}
           />
           {session.enemies.map((enemy) =>
             enemy.kind === "b1" ? (
