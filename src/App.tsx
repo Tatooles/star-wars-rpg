@@ -110,7 +110,7 @@ export function App() {
       <div className="desktop-experience">
         <div className="stars" aria-hidden="true" />
         <div className="horizon" aria-hidden="true" />
-        {(!touchMode || screen === "title" || screen === "complete") && (
+        {(!touchMode || screen === "title") && (
           <FpsCounter onSample={performanceWarning.sample} />
         )}
 

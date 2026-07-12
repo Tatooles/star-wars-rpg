@@ -169,18 +169,17 @@ kbd { min-width: 5.8rem; padding: .35rem .48rem; border: 1px solid #3a4858; bord
 .input-touch .objective-block { top: max(.8rem, env(safe-area-inset-top)); right: max(3.9rem, calc(env(safe-area-inset-right) + 3.5rem)); max-width: 34vw; }
 .input-touch .fps-counter { left: max(7rem, calc(env(safe-area-inset-left) + 6.5rem)); top: max(.58rem, calc(env(safe-area-inset-top) + .25rem)); bottom: auto; min-width: 0; padding: .15rem .3rem; border: 0; background: transparent; font-size: .56rem; }
 .input-touch .health-header .fps-counter { position: static; padding: 0; }
-.input-touch .boss-health { top: max(3.15rem, calc(env(safe-area-inset-top) + 2.7rem)); width: min(20rem, 38vw); gap: .3rem; padding: .4rem .65rem .48rem; }
-.input-touch .boss-health::before, .input-touch .boss-health::after { width: 2.25rem; }
+.input-touch .boss-health { top: max(3.05rem, calc(env(safe-area-inset-top) + 2.6rem)); width: min(14rem, 28vw); gap: .2rem; padding: .28rem .45rem .34rem; }
+.input-touch .boss-health::before, .input-touch .boss-health::after { width: 1.55rem; height: .14rem; }
 .input-touch .boss-health-copy { gap: .12rem; }
-.input-touch .boss-health-copy span { font-size: .46rem; }
-.input-touch .boss-health-copy b { font-size: .62rem; }
-.input-touch .boss-health-header strong { font-size: .58rem; }
-.input-touch .boss-health-track { height: .34rem; }
+.input-touch .boss-health-copy span, .input-touch .boss-health-header strong { display: none; }
+.input-touch .boss-health-copy b { font-size: .54rem; letter-spacing: .06em; }
+.input-touch .boss-health-track { height: .26rem; }
 .input-touch .progression-hud { bottom: max(.7rem, env(safe-area-inset-bottom)); transform: translateX(-50%) scale(.76); transform-origin: bottom center; }
 .input-touch .level-up-banner b { font-size: 4.5rem; }
 .input-touch .overlay-card { width: min(27rem, calc(100% - 8rem)); padding: clamp(1rem, 5vh, 2rem); }
 .input-touch .overlay-card h2 { font-size: clamp(2.2rem, 11vh, 3.8rem); }
-.input-touch .completion-card { width: min(38rem, calc(100% - 6rem)); }
+.input-touch .completion-card { width: min(34rem, calc(100% - 2rem)); max-height: calc(100dvh - 1rem); overflow: auto; }
 .input-touch .completion-card h2 { font-size: clamp(2.2rem, 11vh, 4.2rem); }
 .input-touch .completion-copy { margin-bottom: .3rem; font-size: .8rem; }
 .input-touch .mission-stats > div { padding: .65rem .5rem; }
@@ -197,9 +196,18 @@ kbd { min-width: 5.8rem; padding: .35rem .48rem; border: 1px solid #3a4858; bord
   .input-touch .title-copy h1 { font-size: clamp(2.5rem, 14vh, 4rem); }
   .input-touch .briefing { margin: .65rem 0 .8rem; }
   .input-touch .controls-note { margin-top: .5rem; }
-  .input-touch .boss-health-copy span, .input-touch .boss-health-header strong { display: none; }
-  .input-touch .boss-health { width: min(18rem, 36vw); }
+  .input-touch .boss-health { width: min(13rem, 27vw); }
   .input-touch .progression-hud { transform: translateX(-50%) scale(.65); }
+  .input-touch .complete-overlay { padding: .4rem; }
+  .input-touch .completion-card { width: min(34rem, calc(100% - 1rem)); padding: .55rem .8rem; gap: .28rem; }
+  .input-touch .completion-card .eyebrow { margin: 0; font-size: .52rem; }
+  .input-touch .completion-card h2 { font-size: clamp(1.9rem, 10vh, 2.7rem); }
+  .input-touch .completion-copy { margin: 0; font-size: .66rem; line-height: 1.3; }
+  .input-touch .mission-stats { margin: .15rem 0; }
+  .input-touch .mission-stats > div { gap: .2rem; padding: .38rem .25rem; }
+  .input-touch .mission-stats span { font-size: .42rem; letter-spacing: .1em; }
+  .input-touch .mission-stats b { font-size: 1rem; }
+  .input-touch .completion-card .primary-action { min-width: 10rem; justify-self: center; padding: .55rem .8rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
