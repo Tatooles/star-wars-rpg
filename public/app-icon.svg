@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Break the Signal beacon emblem">
+  <defs>
+    <radialGradient id="space" cx="50%" cy="42%" r="72%">
+      <stop offset="0" stop-color="#152c42"/>
+      <stop offset="0.58" stop-color="#08111c"/>
+      <stop offset="1" stop-color="#03070c"/>
+    </radialGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#bfe7ff"/>
+      <stop offset="0.45" stop-color="#75bdff"/>
+      <stop offset="1" stop-color="#2879b7"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="104" fill="url(#space)"/>
+  <circle cx="256" cy="256" r="172" fill="none" stroke="#315273" stroke-width="8" opacity="0.72"/>
+  <circle cx="256" cy="256" r="126" fill="none" stroke="#75bdff" stroke-width="5" opacity="0.32"/>
+  <path d="M256 101 411 256 256 411 101 256Z" fill="none" stroke="url(#beam)" stroke-width="18"/>
+  <path d="M256 164 348 256 256 348 164 256Z" fill="#75bdff" opacity="0.12" stroke="#a9ddff" stroke-width="10"/>
+  <circle cx="256" cy="256" r="31" fill="#f2cc54"/>
+  <path d="M256 206V84M306 221l86-86M321 256h121M206 221l-86-86M191 256H70" fill="none" stroke="#f2cc54" stroke-width="12" stroke-linecap="round" opacity="0.84"/>
+</svg>

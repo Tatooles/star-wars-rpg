@@ -169,7 +169,13 @@ kbd { min-width: 5.8rem; padding: .35rem .48rem; border: 1px solid #3a4858; bord
 .input-touch .objective-block { top: max(.8rem, env(safe-area-inset-top)); right: max(3.9rem, calc(env(safe-area-inset-right) + 3.5rem)); max-width: 34vw; }
 .input-touch .fps-counter { left: max(7rem, calc(env(safe-area-inset-left) + 6.5rem)); top: max(.58rem, calc(env(safe-area-inset-top) + .25rem)); bottom: auto; min-width: 0; padding: .15rem .3rem; border: 0; background: transparent; font-size: .56rem; }
 .input-touch .health-header .fps-counter { position: static; padding: 0; }
-.input-touch .boss-health { top: max(3.15rem, calc(env(safe-area-inset-top) + 2.7rem)); width: min(27rem, 48vw); padding: .5rem .7rem .6rem; }
+.input-touch .boss-health { top: max(3.15rem, calc(env(safe-area-inset-top) + 2.7rem)); width: min(20rem, 38vw); gap: .3rem; padding: .4rem .65rem .48rem; }
+.input-touch .boss-health::before, .input-touch .boss-health::after { width: 2.25rem; }
+.input-touch .boss-health-copy { gap: .12rem; }
+.input-touch .boss-health-copy span { font-size: .46rem; }
+.input-touch .boss-health-copy b { font-size: .62rem; }
+.input-touch .boss-health-header strong { font-size: .58rem; }
+.input-touch .boss-health-track { height: .34rem; }
 .input-touch .progression-hud { bottom: max(.7rem, env(safe-area-inset-bottom)); transform: translateX(-50%) scale(.76); transform-origin: bottom center; }
 .input-touch .level-up-banner b { font-size: 4.5rem; }
 .input-touch .overlay-card { width: min(27rem, calc(100% - 8rem)); padding: clamp(1rem, 5vh, 2rem); }
@@ -192,6 +198,7 @@ kbd { min-width: 5.8rem; padding: .35rem .48rem; border: 1px solid #3a4858; bord
   .input-touch .briefing { margin: .65rem 0 .8rem; }
   .input-touch .controls-note { margin-top: .5rem; }
   .input-touch .boss-health-copy span, .input-touch .boss-health-header strong { display: none; }
+  .input-touch .boss-health { width: min(18rem, 36vw); }
   .input-touch .progression-hud { transform: translateX(-50%) scale(.65); }
 }
 

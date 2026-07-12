@@ -24,10 +24,11 @@ Star Wars: Break the Signal supports browser play on touch-first phones and tabl
 - Mobile rendering targets 60 FPS with a stable 30 FPS minimum by reducing maximum device-pixel ratio, shadow resolution, and antialiasing cost.
 - Sustained performance below 30 FPS produces a dismissible warning.
 - Supported browsers may offer a user-initiated fullscreen button; fullscreen is never forced.
+- iPhone and iPad users can add the game to the Home Screen for an explicit standalone, landscape-oriented experience without Safari toolbars.
 
 ## Deliberate exclusions
 
-This pass does not add mobile-specific difficulty, vibration, gamepad support, remapping, handedness settings, a PWA, offline caching, or a fallback renderer.
+This pass does not add mobile-specific difficulty, vibration, gamepad support, remapping, handedness settings, a service worker, offline caching, an installation prompt, a native wrapper, or a fallback renderer.
 
 ## Verification
 
