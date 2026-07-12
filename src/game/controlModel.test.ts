@@ -6,13 +6,29 @@ import {
 } from "./controlModel";
 
 describe("keyboard control model", () => {
+  it("scales movement and camera rotation from normalized analog axes", () => {
+    expect(
+      advanceCameraYaw({
+        cameraYaw: 0,
+        deltaSeconds: 0.5,
+        turnAxis: 0.5,
+        targetLocked: false,
+      }),
+    ).toBeCloseTo(Math.PI / 6);
+    expect(
+      resolveLongitudinalMovement({
+        cameraYaw: Math.PI / 2,
+        moveAxis: 0.5,
+      }),
+    ).toEqual({ directionX: 1, directionZ: 0, speedMultiplier: 0.5 });
+  });
+
   it("turns left and right at a constant 120 degrees per second", () => {
     expect(
       advanceCameraYaw({
         cameraYaw: 0,
         deltaSeconds: 0.5,
-        turnLeft: true,
-        turnRight: false,
+        turnAxis: 1,
         targetLocked: false,
       }),
     ).toBeCloseTo(Math.PI / 3);
@@ -20,8 +36,7 @@ describe("keyboard control model", () => {
       advanceCameraYaw({
         cameraYaw: 0,
         deltaSeconds: 0.5,
-        turnLeft: false,
-        turnRight: true,
+        turnAxis: -1,
         targetLocked: false,
       }),
     ).toBeCloseTo(-Math.PI / 3);
@@ -32,8 +47,7 @@ describe("keyboard control model", () => {
       advanceCameraYaw({
         cameraYaw: 1.25,
         deltaSeconds: 1,
-        turnLeft: true,
-        turnRight: false,
+        turnAxis: 1,
         targetLocked: true,
       }),
     ).toBe(1.25);
@@ -43,15 +57,13 @@ describe("keyboard control model", () => {
     expect(
       resolveLongitudinalMovement({
         cameraYaw: Math.PI / 2,
-        forward: true,
-        backward: false,
+        moveAxis: 1,
       }),
     ).toEqual({ directionX: 1, directionZ: 0, speedMultiplier: 1 });
     expect(
       resolveLongitudinalMovement({
         cameraYaw: Math.PI / 2,
-        forward: false,
-        backward: true,
+        moveAxis: -1,
       }),
     ).toEqual({ directionX: -1, directionZ: 0, speedMultiplier: 0.75 });
   });
@@ -60,8 +72,7 @@ describe("keyboard control model", () => {
     expect(
       resolveLongitudinalMovement({
         cameraYaw: 0,
-        forward: true,
-        backward: true,
+        moveAxis: 0,
       }),
     ).toEqual({ directionX: 0, directionZ: 0, speedMultiplier: 0 });
   });
@@ -72,8 +83,7 @@ describe("keyboard control model", () => {
         cameraYaw: 0,
         playerPosition: { x: 1, z: 2 },
         lockedTargetPosition: { x: 4, z: 2 },
-        forward: true,
-        backward: false,
+        moveAxis: 1,
       }),
     ).toEqual({
       facingYaw: Math.PI / 2,
@@ -86,8 +96,7 @@ describe("keyboard control model", () => {
         cameraYaw: 0,
         playerPosition: { x: 1, z: 2 },
         lockedTargetPosition: { x: 4, z: 2 },
-        forward: false,
-        backward: true,
+        moveAxis: -1,
       }),
     ).toEqual({
       facingYaw: Math.PI / 2,

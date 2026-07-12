@@ -42,13 +42,12 @@ export function CameraRig({
     const yawBeforeManualTurn = yawRef.current;
     const turningManually = enabled
       && !lockPosition
-      && controls.current.turnLeft !== controls.current.turnRight;
+      && controls.current.turnAxis !== 0;
     if (enabled) {
       yawRef.current = advanceCameraYaw({
         cameraYaw: yawRef.current,
         deltaSeconds: delta,
-        turnLeft: controls.current.turnLeft,
-        turnRight: controls.current.turnRight,
+        turnAxis: controls.current.turnAxis,
         targetLocked: Boolean(lockPosition),
       });
     }

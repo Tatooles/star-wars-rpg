@@ -126,8 +126,7 @@ export function Player({
       cameraYaw: cameraYaw.current,
       playerPosition: bodyPosition,
       lockedTargetPosition: targetPosition,
-      forward: input.forward,
-      backward: input.backward,
+      moveAxis: input.moveAxis,
     });
     const velocity = body.linvel();
     moving.current = movement.speedMultiplier > 0;

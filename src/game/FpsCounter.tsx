@@ -1,10 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { calculateFps } from "./fps";
 
 const SAMPLE_WINDOW_MS = 500;
 
-export function FpsCounter() {
+type FpsCounterProps = {
+  onSample?: (fps: number) => void;
+};
+
+export function FpsCounter({ onSample }: FpsCounterProps) {
   const [fps, setFps] = useState<number | null>(null);
+  const sampleHandler = useRef(onSample);
+
+  useEffect(() => {
+    sampleHandler.current = onSample;
+  }, [onSample]);
 
   useEffect(() => {
     let animationFrameId = 0;
@@ -19,7 +28,9 @@ export function FpsCounter() {
         const elapsedMs = now - sampleStartedAt;
 
         if (elapsedMs >= SAMPLE_WINDOW_MS) {
-          setFps(calculateFps(frameCount, elapsedMs));
+          const nextFps = calculateFps(frameCount, elapsedMs);
+          setFps(nextFps);
+          sampleHandler.current?.(nextFps);
           sampleStartedAt = now;
           frameCount = 0;
         }
