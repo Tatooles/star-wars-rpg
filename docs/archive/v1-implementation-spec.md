@@ -1,10 +1,12 @@
 # Star Wars: Break the Signal — Version 1 Specification
 
-Status: Approved for implementation
+Status: Historical — Version 1 implementation completed
 
 Last updated: 2026-07-09
 
 Target: A short, complete, desktop-browser gameplay demo
+
+> Historical document: This specification records the requirements and implementation plan for the initial Version 1 build. It is retained for design context and regression history, but it is not an evergreen product specification and does not override current user requests, approved task briefs, current application behavior, tests, or newer durable documentation.
 
 ## 1. Purpose
 
@@ -373,9 +375,3 @@ The implementation is complete only when all of the following are true:
 - [ ] Gameplay and menus have no repeating console errors or unhandled exceptions.
 - [ ] The mission is reasonably completable by a first-time player in 3–5 minutes.
 - [ ] No runtime asset depends on an external model, music, or sound URL.
-
-## 19. Handoff Prompt
-
-Use this Goal prompt when implementation moves to a fresh Codex task:
-
-> `/goal` Read `SPEC.md` completely and treat it as the source of truth. Implement the game end-to-end without expanding its scope. Work through the milestones in order, preserving working behavior as you go. After each milestone passes its relevant checks, create a focused local checkpoint commit so the run can resume safely if interrupted; do not push unless explicitly requested. Use the installed project skills when helpful. Run the production build and verify the full mission in a real desktop browser, plus the mobile-blocked state. Treat every acceptance-checklist item as part of the definition of done. Do not claim completion for behavior you did not actually verify.
