@@ -9,6 +9,9 @@ All runtime captures use the ordinary 1920x1080 production viewport, camera, HUD
 - Opening/traversal: `art/previews/runtime-slice-final-neutral.jpg`
 - Normal combat distance / movement into the B1 lane: `art/previews/runtime-slice-movement.jpg`
 - Attack key pose: `art/previews/runtime-slice-attack.jpg`
+- Corrected orientation/shadow checkpoint: `art/previews/runtime-fixes-final.jpg`
+- Supplemental corrected Anakin view: `art/previews/anakin-corrected-v9.jpg`
+- Supplemental B1 walk contact pose: `art/previews/b1-walk-cycle.jpg`
 - Supplemental source turntables: `art/previews/anakin-styled-v8.png`, `art/previews/b1-styled-v2.png`
 
 Missing approval evidence:
@@ -32,8 +35,8 @@ Environment: Codex in-app browser, explicit 1920x1080 viewport, development serv
 
 | Asset | Runtime payload | Re-imported triangles | Mesh/material structure | Notes |
 | --- | ---: | ---: | --- | --- |
-| Anakin | 2.2 MB | 37,492 | 18 mesh nodes; local compressed textures; four clips | Slightly above the 20–35k starting triangle guardrail; hidden body geometry was removed. Further LOD/mesh consolidation is indicated for mobile. |
-| B1 | 86 KB | 5,712 | One merged runtime object with five material primitives; shared GLB cache across instances | Below the 8–15k starting triangle range but silhouette remains readable at gameplay distance. |
+| Anakin | 2.9 MB | 42,992 | Local compressed textures; five clips including dedicated backpedal | Above the 20–35k starting triangle guardrail; further LOD/mesh consolidation is indicated for mobile. |
+| B1 | 122 KB | 5,792 | One merged rigged runtime object with five material primitives and four clips; shared GLB cache across instances | Below the 8–15k starting triangle range but silhouette remains readable at gameplay distance. |
 
 Rendering decisions:
 
@@ -49,8 +52,8 @@ Rendering decisions:
 
 Blender 5.1.2 successfully re-imported both checked-in GLBs:
 
-- Anakin: 18 mesh nodes, 37,492 triangles, actions `Idle`, `Run`, `Attack1`, `Block`.
-- B1: merged five-material runtime geometry, 5,712 triangles, no animation dependency.
+- Anakin: 20 mesh nodes, 42,992 triangles, actions `Idle`, `Run`, `Backpedal`, `Attack1`, `Block`.
+- B1: merged five-material rigid rig, 5,792 triangles, actions `Idle`, `Walk`, `Fire`, `Hit`.
 
 ## Automated verification
 

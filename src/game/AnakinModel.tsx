@@ -3,10 +3,12 @@ import { createPortal, useFrame } from "@react-three/fiber";
 import { useAnimations, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
-import { selectAnakinActionKey, selectAnakinClip, visualAssetManifest } from "./visualAssets";
+import { anakinLocomotionTimeScale, selectAnakinActionKey, selectAnakinClip, visualAssetManifest } from "./visualAssets";
 
 type AnakinModelProps = {
   moving: RefObject<boolean>;
+  backpedaling: RefObject<boolean>;
+  movementSpeed: RefObject<number>;
   combatPose: RefObject<CombatPose>;
 };
 
@@ -36,7 +38,7 @@ const runtimeRobe = new THREE.MeshStandardMaterial({ color: "#27160f", roughness
 const runtimeTabard = new THREE.MeshStandardMaterial({ color: "#53301f", roughness: 0.84 });
 const runtimeSkin = new THREE.MeshStandardMaterial({ color: "#b87857", roughness: 0.78 });
 
-export function AnakinModel({ moving, combatPose }: AnakinModelProps) {
+export function AnakinModel({ moving, backpedaling, movementSpeed, combatPose }: AnakinModelProps) {
   const gltf = useGLTF(visualAssetManifest.anakin.runtimePath);
   const scene = useMemo(() => clone(gltf.scene), [gltf.scene]);
   const { actions } = useAnimations(gltf.animations, scene);
@@ -70,12 +72,14 @@ export function AnakinModel({ moving, combatPose }: AnakinModelProps) {
       moving: moving.current,
       attacking: pose.attacking,
       blocking: pose.blocking,
+      backpedaling: backpedaling.current,
     });
     const nextKey = selectAnakinActionKey({
       moving: moving.current,
       attacking: pose.attacking,
       blocking: pose.blocking,
       comboStep: pose.comboStep,
+      backpedaling: backpedaling.current,
     });
     if (nextKey !== activeClip.current) {
       const previousClip = activeClip.current?.split(":")[0];
@@ -84,7 +88,14 @@ export function AnakinModel({ moving, combatPose }: AnakinModelProps) {
       previous?.fadeOut(0.12);
       next?.reset().fadeIn(0.12).play();
       next?.setLoop(nextClip === "Attack1" ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
+      if ((nextClip === "Run" || nextClip === "Backpedal") && next) {
+        next.timeScale = anakinLocomotionTimeScale(movementSpeed.current);
+      }
       activeClip.current = nextKey;
+    }
+    if (nextClip === "Run" || nextClip === "Backpedal") {
+      const locomotion = actionMap.current[nextClip];
+      if (locomotion) locomotion.timeScale = anakinLocomotionTimeScale(movementSpeed.current);
     }
     if (body.current) body.current.rotation.z = pose.dodging ? -0.24 : 0;
     if (saber.current) {
@@ -95,7 +106,7 @@ export function AnakinModel({ moving, combatPose }: AnakinModelProps) {
   });
 
   return (
-    <group ref={body} position={[0, -0.88, 0]} rotation={[0, Math.PI, 0]}>
+    <group ref={body} position={[0, -0.88, 0]}>
       <primitive object={scene} />
       {rightHand && createPortal(<group ref={saber} position={[0, 0.12, 0]} rotation={[0, 0, 0]}>
         <mesh material={saberHilt}>

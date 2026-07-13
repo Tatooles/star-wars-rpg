@@ -50,6 +50,8 @@ export function Player({
 }: PlayerProps) {
   const model = useRef<THREE.Group>(null);
   const moving = useRef(false);
+  const backpedaling = useRef(false);
+  const movementSpeed = useRef(0);
   const lastAttackPress = useRef(0);
   const lastDodgePress = useRef(0);
   const targetRotation = useRef(Math.PI);
@@ -131,6 +133,8 @@ export function Player({
     });
     const velocity = body.linvel();
     moving.current = movement.speedMultiplier > 0;
+    backpedaling.current = input.backward && !input.forward;
+    movementSpeed.current = Math.hypot(velocity.x, velocity.z);
     const movementLocked = performance.now() < controlLockUntilRef.current;
     targetRotation.current = movement.facingYaw;
 
@@ -215,7 +219,12 @@ export function Player({
     >
       <CapsuleCollider args={[0.62, 0.43]} position={[0, 0.12, 0]} />
       <group ref={model}>
-        <AnakinModel moving={moving} combatPose={pose} />
+        <AnakinModel
+          moving={moving}
+          backpedaling={backpedaling}
+          movementSpeed={movementSpeed}
+          combatPose={pose}
+        />
       </group>
     </RigidBody>
   );

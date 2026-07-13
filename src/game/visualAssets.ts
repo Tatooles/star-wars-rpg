@@ -3,6 +3,7 @@ export type AnakinAnimationState = {
   attacking: boolean;
   blocking: boolean;
   comboStep?: number;
+  backpedaling?: boolean;
 };
 
 export const visualAssetManifest = {
@@ -21,6 +22,7 @@ export const visualAssetManifest = {
 export function selectAnakinClip(state: AnakinAnimationState) {
   if (state.blocking) return "Block";
   if (state.attacking) return "Attack1";
+  if (state.moving && state.backpedaling) return "Backpedal";
   if (state.moving) return "Run";
   return "Idle";
 }
@@ -28,4 +30,15 @@ export function selectAnakinClip(state: AnakinAnimationState) {
 export function selectAnakinActionKey(state: AnakinAnimationState) {
   const clip = selectAnakinClip(state);
   return clip === "Attack1" ? `${clip}:${state.comboStep ?? 0}` : clip;
+}
+
+export function anakinLocomotionTimeScale(speed: number) {
+  return Math.max(0, Math.min(1.25, speed / 6.8));
+}
+
+export function selectB1Clip(state: { moving: boolean; firing: boolean; hit: boolean }) {
+  if (state.hit) return "Hit";
+  if (state.firing) return "Fire";
+  if (state.moving) return "Walk";
+  return "Idle";
 }

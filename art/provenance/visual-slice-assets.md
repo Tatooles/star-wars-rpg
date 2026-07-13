@@ -6,7 +6,7 @@ This manifest covers the replacement-visual vertical slice only. Runtime binarie
 
 - Runtime: `public/assets/models/anakin.glb`
 - Editable source: `art/blender/characters/anakin.blend`
-- SHA-256: `1f3e91e4ea194bf21ea948e3072ad8fb93103efd21ed6548ee8cc8c5f4285cce`
+- SHA-256: `073246ded52fb384877f83ed9424a5d32969a0e34213a02c1436a65026d5bf4f`
 - Base generator: MakeHuman/MPFB official system assets
 - Garment pack: MakeHuman Community `suits02`, using `donitz_monk_robe`
 - Creator/publisher: MakeHuman Community contributors / MakeHuman Community asset repository
@@ -21,20 +21,20 @@ This manifest covers the replacement-visual vertical slice only. Runtime binarie
 - License: CC0 1.0 for exported MakeHuman characters and the named official asset-pack content, as stated on the linked project pages.
 - Exact license record: https://creativecommons.org/publicdomain/zero/1.0/legalcode
 - Attribution requirement: none under CC0. Source and creator/publisher are still recorded above; no in-game attribution is required.
-- Project-authored changes: body proportions, garment island removal/cropping, materials, tabards, belt, saber hilt, rig actions, hidden-body removal, WebP/Draco runtime export.
+- Project-authored changes: body proportions, garment island removal/cropping, materials, tabards, fitted front/side utility belt, saber hilt, calibrated run/backpedal actions, hidden-body removal below the intact neck, WebP/Draco runtime export.
 
 ## B1 battle droid
 
 - Runtime: `public/assets/models/b1.glb`
 - Editable source: `art/blender/characters/b1.blend`
-- SHA-256: `dafd2a2348d7c34d51a297ffd534c600252ccc95badca53960ee8ab46b118f9d`
+- SHA-256: `5f7e1d1647fd85f46e041651747d74f1105f4b06da2fda991cc7f692af2a160d`
 - Source: original project-authored geometry and materials created in Blender; no downloaded mesh or texture content.
 - Creator/publisher: this project / project owner
 - Date created: 2026-07-12
 - Original downloaded filename/checksum: not applicable; no third-party source file exists.
 - License status: original project asset owned by the project owner; not represented as a Blender-licensed or CC0 third-party asset.
 - Attribution requirement: none; project-authored asset.
-- Runtime treatment: merged five-material mesh with Draco compression.
+- Runtime treatment: merged five-material mesh with a rigid armature, `Idle`/`Walk`/`Fire`/`Hit` clips, and Draco compression.
 
 ## Environment slice
 

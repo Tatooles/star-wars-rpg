@@ -1,5 +1,5 @@
 import { useFrame } from "@react-three/fiber";
-import { useGLTF } from "@react-three/drei";
+import { useAnimations, useGLTF } from "@react-three/drei";
 import { CapsuleCollider, RapierRigidBody, RigidBody } from "@react-three/rapier";
 import { RefObject, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -7,7 +7,7 @@ import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import type { EnemyState } from "./session";
 import { B1_TUNING } from "./combatTuning";
 import { EnemyIndicator } from "./EnemyIndicator";
-import { visualAssetManifest } from "./visualAssets";
+import { selectB1Clip, visualAssetManifest } from "./visualAssets";
 
 export type ProjectileSpawn = {
   position: THREE.Vector3;
@@ -36,6 +36,7 @@ export function B1Droid({
 }: B1DroidProps) {
   const gltf = useGLTF(visualAssetManifest.b1.runtimePath, true);
   const visual = useMemo(() => clone(gltf.scene), [gltf.scene]);
+  const { actions } = useAnimations(gltf.animations, visual);
   const bodyRef = useRef<RapierRigidBody>(null);
   const fireTimer = useRef(
     B1_TUNING.initialFireDelay +
@@ -48,15 +49,20 @@ export function B1Droid({
   const hitReaction = useRef(0);
   const model = useRef<THREE.Group>(null);
   const telegraphLight = useRef<THREE.PointLight>(null);
+  const actionMap = useRef<Record<string, THREE.AnimationAction | null>>({});
+  const activeClip = useRef<string | undefined>(undefined);
+  const movingVisual = useRef(false);
+  const fireAnimation = useRef(0);
 
   useEffect(() => {
+    actionMap.current = { ...actions };
     visual.traverse((object) => {
       if (object instanceof THREE.Mesh) {
         object.castShadow = true;
-        object.receiveShadow = true;
+        object.receiveShadow = false;
       }
     });
-  }, [visual]);
+  }, [actions, visual]);
 
   useFrame((_, delta) => {
     const body = bodyRef.current;
@@ -65,8 +71,23 @@ export function B1Droid({
     if (enemy.health < lastHealth.current) hitReaction.current = B1_TUNING.hitRecovery;
     lastHealth.current = enemy.health;
     hitReaction.current = Math.max(0, hitReaction.current - delta);
+    fireAnimation.current = Math.max(0, fireAnimation.current - delta);
+    const nextClip = selectB1Clip({
+      moving: movingVisual.current,
+      firing: fireAnimation.current > 0,
+      hit: hitReaction.current > 0,
+    });
+    if (nextClip !== activeClip.current) {
+      const previous = activeClip.current ? actionMap.current[activeClip.current] : undefined;
+      const next = actionMap.current[nextClip];
+      previous?.fadeOut(0.08);
+      next?.reset().fadeIn(0.08).play();
+      next?.setLoop(nextClip === "Walk" || nextClip === "Idle" ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
+      if (nextClip === "Walk" && next) next.timeScale = 1.15;
+      activeClip.current = nextClip;
+    }
     if (model.current) {
-      model.current.position.y = Math.sin(performance.now() * 0.004) * 0.025;
+      model.current.position.y = 0;
       model.current.rotation.z = hitReaction.current > 0
         ? Math.sin(hitReaction.current * 42) * 0.14
         : 0;
@@ -95,6 +116,7 @@ export function B1Droid({
         move.addScaledVector(strafe, 1.15);
       }
     }
+    movingVisual.current = move.lengthSq() > 0.01;
     const next = new THREE.Vector3(position.x, position.y, position.z).addScaledVector(move, delta);
     const encounterBoundary = enemy.encounter === 1 ? -5 : -26;
     next.x = THREE.MathUtils.clamp(next.x, -4.8, 4.8);
@@ -111,6 +133,7 @@ export function B1Droid({
       const muzzle = new THREE.Vector3(position.x, position.y + 1.1, position.z).addScaledVector(towardPlayer, 0.7);
       const target = new THREE.Vector3(playerPosition.x, playerPosition.y + 0.2, playerPosition.z);
       onFire({ position: muzzle, direction: target.sub(muzzle).normalize(), sourceId: enemy.id });
+      fireAnimation.current = 0.18;
       fireTimer.current = B1_TUNING.fireCooldown + Math.random() * B1_TUNING.fireCooldownVariance;
       telegraph.current = 0;
       if (Math.random() > 0.68) orbitDirection.current *= -1;
