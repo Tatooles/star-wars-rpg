@@ -46,14 +46,13 @@ export function AnakinModel({ moving, backpedaling, movementSpeed, combatPose }:
   const activeClip = useRef<string | undefined>(undefined);
   const actionMap = useRef<Record<string, THREE.AnimationAction | null>>({});
   const body = useRef<THREE.Group>(null);
-  const saber = useRef<THREE.Group>(null);
 
   useEffect(() => {
     actionMap.current = { ...actions };
     scene.traverse((object) => {
       if (object instanceof THREE.Mesh) {
         object.castShadow = true;
-        object.receiveShadow = true;
+        object.receiveShadow = false;
         if (object.name.includes("Base_CC0")) {
           object.material = runtimeSkin;
         } else if (object.name.includes("Fitted_Robe")) {
@@ -98,27 +97,22 @@ export function AnakinModel({ moving, backpedaling, movementSpeed, combatPose }:
       if (locomotion) locomotion.timeScale = anakinLocomotionTimeScale(movementSpeed.current);
     }
     if (body.current) body.current.rotation.z = pose.dodging ? -0.24 : 0;
-    if (saber.current) {
-      if (pose.blocking) saber.current.rotation.set(-0.55, 0.25, Math.PI - 0.7);
-      else if (pose.attacking) saber.current.rotation.set(-0.3, 0, Math.PI - 1.15 + pose.attackProgress * 2.1);
-      else saber.current.rotation.set(0.1, 0, Math.PI - 0.2);
-    }
   });
 
   return (
     <group ref={body} position={[0, -0.88, 0]}>
       <primitive object={scene} />
-      {rightHand && createPortal(<group ref={saber} position={[0, 0.12, 0]} rotation={[0, 0, 0]}>
+      {rightHand && createPortal(<group position={[0, 0.12, 0]} rotation={[0.1, 0, 0.35]}>
         <mesh material={saberHilt}>
           <cylinderGeometry args={[0.045, 0.052, 0.3, 12]} />
         </mesh>
-        <mesh material={saberCore} position={[0, 0.92, 0]}>
+        <mesh material={saberCore} position={[0, -0.92, 0]}>
           <cylinderGeometry args={[0.024, 0.024, 1.68, 10]} />
         </mesh>
-        <mesh material={saberGlow} position={[0, 0.92, 0]}>
+        <mesh material={saberGlow} position={[0, -0.92, 0]}>
           <cylinderGeometry args={[0.07, 0.07, 1.72, 12]} />
         </mesh>
-        <pointLight color="#238fff" intensity={4} distance={3.6} position={[0, 0.9, 0]} />
+        <pointLight color="#238fff" intensity={4} distance={3.6} position={[0, -0.9, 0]} />
       </group>, rightHand)}
     </group>
   );

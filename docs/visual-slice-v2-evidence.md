@@ -37,7 +37,7 @@ Environment: Codex in-app browser, explicit 1920x1080 viewport, development serv
 
 | Asset | Runtime payload | Re-imported triangles | Mesh/material structure | Notes |
 | --- | ---: | ---: | --- | --- |
-| Anakin | 2.9 MB | 42,884 character triangles | Local compressed textures; five clips including dedicated backpedal | Above the 20–35k starting triangle guardrail; further LOD/mesh consolidation is indicated for mobile. Floating upper overlays were removed; retained lower tabards average 3.3–3.6 mm from the fitted robe across all five authored pose families. |
+| Anakin | 2.8 MB | 41,608 character triangles | Local compressed textures; five clips including dedicated backpedal | Above the 20–35k starting triangle guardrail; further LOD/mesh consolidation is indicated for mobile. Floating upper overlays and the redundant belt hilt were removed; retained lower tabards average 3.3–3.6 mm from the fitted robe across all five authored pose families. |
 | B1 | 122 KB | 5,792 | One merged rigged runtime object with five material primitives and four clips; shared GLB cache across instances | Below the 8–15k starting triangle range but silhouette remains readable at gameplay distance. |
 
 Rendering decisions:
@@ -54,12 +54,12 @@ Rendering decisions:
 
 Blender 5.1.2 successfully re-imported both checked-in GLBs:
 
-- Anakin: 19 imported mesh objects and 42,896 total triangles, including one pre-existing 12-triangle scene helper; 18 character mesh nodes and 42,884 character triangles. Actions: `Idle`, `Run`, `Backpedal`, `Attack1`, `Block`.
+- Anakin: 12 imported character mesh nodes and 41,608 character triangles. Actions: `Idle`, `Run`, `Backpedal`, `Attack1`, `Block`. The exported hip hilt is absent and the idle arm bones contain authored non-zero rotations.
 - B1: merged five-material rigid rig, 5,792 triangles, actions `Idle`, `Walk`, `Fire`, `Hit`.
 
 ## Automated verification
 
-- `pnpm test`: 10 files, 35 tests passed.
+- `pnpm test`: 10 files, 37 tests passed.
 - `pnpm lint`: passed.
 - `pnpm build`: passed; existing large `GameScene` chunk warning remains.
 - `git diff --check`: passed.
