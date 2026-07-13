@@ -6,7 +6,7 @@ This manifest covers the replacement-visual vertical slice only. Runtime binarie
 
 - Runtime: `public/assets/models/anakin.glb`
 - Editable source: `art/blender/characters/anakin.blend`
-- SHA-256: `073246ded52fb384877f83ed9424a5d32969a0e34213a02c1436a65026d5bf4f`
+- SHA-256: `9b867f8c1ab5f93b2ec4cfb634c53bcd5654de46fc95c57c41c3f4e9d6d3a4f5`
 - Base generator: MakeHuman/MPFB official system assets
 - Garment pack: MakeHuman Community `suits02`, using `donitz_monk_robe`
 - Creator/publisher: MakeHuman Community contributors / MakeHuman Community asset repository
@@ -21,7 +21,7 @@ This manifest covers the replacement-visual vertical slice only. Runtime binarie
 - License: CC0 1.0 for exported MakeHuman characters and the named official asset-pack content, as stated on the linked project pages.
 - Exact license record: https://creativecommons.org/publicdomain/zero/1.0/legalcode
 - Attribution requirement: none under CC0. Source and creator/publisher are still recorded above; no in-game attribution is required.
-- Project-authored changes: body proportions, garment island removal/cropping, materials, tabards, fitted front/side utility belt, saber hilt, calibrated run/backpedal actions, hidden-body removal below the intact neck, WebP/Draco runtime export.
+- Project-authored changes: body proportions, garment island removal/cropping, materials, removal of failed floating upper overlays, rest-pose conformance and 26-group weight transfer for retained lower tabards, fitted front/side utility belt, saber hilt, calibrated run/backpedal actions, hidden-body removal below the intact neck, WebP/Draco runtime export.
 
 ## B1 battle droid
 

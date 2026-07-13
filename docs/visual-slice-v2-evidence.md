@@ -12,6 +12,8 @@ All runtime captures use the ordinary 1920x1080 production viewport, camera, HUD
 - Corrected orientation/shadow checkpoint: `art/previews/runtime-fixes-final.jpg`
 - Supplemental corrected Anakin view: `art/previews/anakin-corrected-v9.jpg`
 - Supplemental B1 walk contact pose: `art/previews/b1-walk-cycle.jpg`
+- Cleaned robe close view: `art/previews/anakin-panels-cleaned.jpg`
+- Cleaned robe production-camera view: `art/previews/runtime-robe-fixed.jpg`
 - Supplemental source turntables: `art/previews/anakin-styled-v8.png`, `art/previews/b1-styled-v2.png`
 
 Missing approval evidence:
@@ -35,7 +37,7 @@ Environment: Codex in-app browser, explicit 1920x1080 viewport, development serv
 
 | Asset | Runtime payload | Re-imported triangles | Mesh/material structure | Notes |
 | --- | ---: | ---: | --- | --- |
-| Anakin | 2.9 MB | 42,992 | Local compressed textures; five clips including dedicated backpedal | Above the 20–35k starting triangle guardrail; further LOD/mesh consolidation is indicated for mobile. |
+| Anakin | 2.9 MB | 42,884 character triangles | Local compressed textures; five clips including dedicated backpedal | Above the 20–35k starting triangle guardrail; further LOD/mesh consolidation is indicated for mobile. Floating upper overlays were removed; retained lower tabards average 3.3–3.6 mm from the fitted robe across all five authored pose families. |
 | B1 | 122 KB | 5,792 | One merged rigged runtime object with five material primitives and four clips; shared GLB cache across instances | Below the 8–15k starting triangle range but silhouette remains readable at gameplay distance. |
 
 Rendering decisions:
@@ -52,7 +54,7 @@ Rendering decisions:
 
 Blender 5.1.2 successfully re-imported both checked-in GLBs:
 
-- Anakin: 20 mesh nodes, 42,992 triangles, actions `Idle`, `Run`, `Backpedal`, `Attack1`, `Block`.
+- Anakin: 19 imported mesh objects and 42,896 total triangles, including one pre-existing 12-triangle scene helper; 18 character mesh nodes and 42,884 character triangles. Actions: `Idle`, `Run`, `Backpedal`, `Attack1`, `Block`.
 - B1: merged five-material rigid rig, 5,792 triangles, actions `Idle`, `Walk`, `Fire`, `Hit`.
 
 ## Automated verification
