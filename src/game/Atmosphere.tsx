@@ -28,7 +28,7 @@ export function Atmosphere() {
     <group>
       <mesh scale={120}>
         <sphereGeometry args={[1, 24, 16]} />
-        <meshBasicMaterial color="#090d13" side={THREE.BackSide} fog={false} />
+        <meshBasicMaterial color="#101826" side={THREE.BackSide} fog={false} />
       </mesh>
       <points ref={dust}>
         <bufferGeometry>
@@ -43,9 +43,9 @@ export function Atmosphere() {
           blending={THREE.AdditiveBlending}
         />
       </points>
-      <mesh position={[-34, 13, -66]}>
+      <mesh position={[-34, 10, -66]}>
         <sphereGeometry args={[7.5, 16, 10]} />
-        <meshBasicMaterial color="#c75834" fog={false} />
+        <meshBasicMaterial color="#b84b30" fog={false} />
       </mesh>
       <mesh position={[-31, 10.5, -60]}>
         <sphereGeometry args={[1.3, 12, 8]} />

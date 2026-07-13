@@ -1,10 +1,13 @@
 import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
 import { CapsuleCollider, RapierRigidBody, RigidBody } from "@react-three/rapier";
-import { RefObject, useRef } from "react";
+import { RefObject, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import type { EnemyState } from "./session";
 import { B1_TUNING } from "./combatTuning";
 import { EnemyIndicator } from "./EnemyIndicator";
+import { visualAssetManifest } from "./visualAssets";
 
 export type ProjectileSpawn = {
   position: THREE.Vector3;
@@ -22,9 +25,6 @@ type B1DroidProps = {
   onFire: (spawn: ProjectileSpawn) => void;
 };
 
-const tan = new THREE.MeshStandardMaterial({ color: "#b7a27b", roughness: 0.78, metalness: 0.12 });
-const dark = new THREE.MeshStandardMaterial({ color: "#2a2d2b", roughness: 0.55, metalness: 0.4 });
-
 export function B1Droid({
   enemy,
   playerRef,
@@ -34,6 +34,8 @@ export function B1Droid({
   registerBody,
   onFire,
 }: B1DroidProps) {
+  const gltf = useGLTF(visualAssetManifest.b1.runtimePath, true);
+  const visual = useMemo(() => clone(gltf.scene), [gltf.scene]);
   const bodyRef = useRef<RapierRigidBody>(null);
   const fireTimer = useRef(
     B1_TUNING.initialFireDelay +
@@ -46,6 +48,15 @@ export function B1Droid({
   const hitReaction = useRef(0);
   const model = useRef<THREE.Group>(null);
   const telegraphLight = useRef<THREE.PointLight>(null);
+
+  useEffect(() => {
+    visual.traverse((object) => {
+      if (object instanceof THREE.Mesh) {
+        object.castShadow = true;
+        object.receiveShadow = true;
+      }
+    });
+  }, [visual]);
 
   useFrame((_, delta) => {
     const body = bodyRef.current;
@@ -122,28 +133,7 @@ export function B1Droid({
     >
       <CapsuleCollider args={[0.52, 0.38]} position={[0, 0.2, 0]} />
       <group ref={model}>
-        <mesh material={tan} position={[0, 1.55, 0]} castShadow>
-          <boxGeometry args={[0.46, 0.42, 0.38]} />
-        </mesh>
-        <mesh material={dark} position={[0, 1.58, 0.22]} castShadow>
-          <boxGeometry args={[0.24, 0.08, 0.12]} />
-        </mesh>
-        <mesh material={tan} position={[0, 0.75, 0]} castShadow>
-          <boxGeometry args={[0.42, 0.82, 0.3]} />
-        </mesh>
-        {[-1, 1].map((side) => (
-          <group key={side}>
-            <mesh material={tan} position={[side * 0.34, 0.82, 0]} rotation={[0, 0, side * 0.08]} castShadow>
-              <capsuleGeometry args={[0.065, 0.72, 4, 6]} />
-            </mesh>
-            <mesh material={tan} position={[side * 0.16, -0.05, 0]} castShadow>
-              <capsuleGeometry args={[0.075, 0.9, 4, 6]} />
-            </mesh>
-          </group>
-        ))}
-        <mesh material={dark} position={[0.4, 0.82, 0.35]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-          <cylinderGeometry args={[0.08, 0.12, 0.85, 7]} />
-        </mesh>
+        <primitive object={visual} position={[0, -0.55, 0]} rotation={[0, Math.PI, 0]} />
         <pointLight
           ref={telegraphLight}
           color="#5e160d"
@@ -160,3 +150,5 @@ export function B1Droid({
     </RigidBody>
   );
 }
+
+useGLTF.preload(visualAssetManifest.b1.runtimePath, true);

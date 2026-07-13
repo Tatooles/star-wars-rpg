@@ -2,10 +2,13 @@ import { CuboidCollider, RigidBody } from "@react-three/rapier";
 import * as THREE from "three";
 import { RAISED_PLATFORM } from "./outpostGround";
 
-const rockMaterial = new THREE.MeshStandardMaterial({ color: "#4b4038", roughness: 0.96 });
-const groundMaterial = new THREE.MeshStandardMaterial({ color: "#312c29", roughness: 1 });
-const metalMaterial = new THREE.MeshStandardMaterial({ color: "#303b40", roughness: 0.68, metalness: 0.45 });
-const pathMaterial = new THREE.MeshStandardMaterial({ color: "#50443a", roughness: 0.94 });
+const rockMaterial = new THREE.MeshStandardMaterial({ color: "#5a4031", roughness: 0.98 });
+const groundMaterial = new THREE.MeshStandardMaterial({ color: "#38271f", roughness: 1 });
+const metalMaterial = new THREE.MeshStandardMaterial({ color: "#29343a", roughness: 0.72, metalness: 0.52 });
+const pathMaterial = new THREE.MeshStandardMaterial({ color: "#655043", roughness: 0.96 });
+const paintedMetalMaterial = new THREE.MeshStandardMaterial({ color: "#526069", roughness: 0.76, metalness: 0.38 });
+const darkMetalMaterial = new THREE.MeshStandardMaterial({ color: "#161d21", roughness: 0.64, metalness: 0.62 });
+const lampMaterial = new THREE.MeshBasicMaterial({ color: "#ffd09b", toneMapped: false });
 const signalMaterial = new THREE.MeshStandardMaterial({
   color: "#512116",
   emissive: "#d94226",
@@ -40,6 +43,67 @@ function Obstacle({ position, size, rotation = [0, 0, 0], material = rockMateria
   );
 }
 
+function RepresentativeSlice() {
+  return (
+    <group>
+      {[-1, 1].map((side) => (
+        <group
+          key={`barricade-${side}`}
+          position={[side * 4.15, 0.58, 10.5]}
+          rotation={[0, side * -0.2, 0]}
+        >
+          <group>
+            <mesh material={paintedMetalMaterial} castShadow receiveShadow>
+              <boxGeometry args={[2.7, 0.72, 0.3]} />
+            </mesh>
+            {[-1, 1].map((leg) => (
+              <mesh key={leg} material={darkMetalMaterial} position={[leg * 0.95, -0.48, 0]} rotation={[0, 0, leg * 0.22]} castShadow>
+                <boxGeometry args={[0.18, 0.8, 0.24]} />
+              </mesh>
+            ))}
+          </group>
+        </group>
+      ))}
+      <group position={[-6.5, 0, 5.3]}>
+        {[0, 1].map((level) => (
+          <mesh key={level} material={paintedMetalMaterial} position={[level * 0.35, 0.52 + level * 0.92, level * 0.12]} castShadow receiveShadow>
+            <boxGeometry args={[1.35, 0.9, 1.25]} />
+          </mesh>
+        ))}
+        {[-0.42, 0.42].map((x) => (
+          <mesh key={x} material={darkMetalMaterial} position={[x, 0.54, -0.64]}>
+            <boxGeometry args={[0.1, 0.62, 0.08]} />
+          </mesh>
+        ))}
+      </group>
+      <group position={[6.3, 0, 3.8]}>
+        <mesh material={darkMetalMaterial} position={[0, 1.65, 0]} castShadow>
+          <cylinderGeometry args={[0.18, 0.3, 3.3, 8]} />
+        </mesh>
+        <mesh material={paintedMetalMaterial} position={[0, 3.2, 0]} rotation={[0.2, 0, -0.18]} castShadow>
+          <boxGeometry args={[1.35, 0.16, 0.7]} />
+        </mesh>
+        <mesh material={lampMaterial} position={[-0.42, 3.12, -0.34]}>
+          <boxGeometry args={[0.32, 0.09, 0.08]} />
+        </mesh>
+        <pointLight color="#ffb46f" intensity={7} distance={10} position={[-0.42, 3, -0.6]} />
+      </group>
+      {[-1, 1].map((side) => (
+        <group key={`pipe-${side}`} position={[side * 5.2, 0.32, 15]} rotation={[0, 0, Math.PI / 2]}>
+          <mesh material={darkMetalMaterial} castShadow>
+            <cylinderGeometry args={[0.18, 0.18, 3.4, 10]} />
+          </mesh>
+          {[-1.25, 0, 1.25].map((y) => (
+            <mesh key={y} material={paintedMetalMaterial} position={[0, y, 0]}>
+              <torusGeometry args={[0.21, 0.045, 6, 12]} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+    </group>
+  );
+}
+
 export function Outpost() {
   return (
     <group>
@@ -48,6 +112,7 @@ export function Outpost() {
           <boxGeometry args={[24, 1, 78]} />
         </mesh>
       </RigidBody>
+      <RepresentativeSlice />
       {Array.from({ length: 13 }, (_, index) => (
         <mesh
           key={index}

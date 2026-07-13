@@ -23,6 +23,7 @@ import type { GameSession, PlayerCombatState, SessionAction } from "./session";
 import { useControls, type Controls } from "./useControls";
 import type { SoundCue } from "./audio";
 import { B2_TUNING, PLAYER_TUNING } from "./combatTuning";
+import { summarizeFrameTimes } from "./fps";
 
 type GameSceneProps = {
   playing: boolean;
@@ -38,6 +39,34 @@ type ImpactState = {
 };
 
 const BEACON_INTERACTION_RANGE = 7.5;
+
+function PerformanceProbe() {
+  const { gl } = useThree();
+  const samples = useRef<number[]>([]);
+  const peakCalls = useRef(0);
+  const peakTriangles = useRef(0);
+
+  useFrame((_, delta) => {
+    if (!import.meta.env.DEV) return;
+    samples.current.push(delta * 1_000);
+    peakCalls.current = Math.max(peakCalls.current, gl.info.render.calls);
+    peakTriangles.current = Math.max(peakTriangles.current, gl.info.render.triangles);
+    if (samples.current.length < 300) return;
+    document.documentElement.dataset.renderMetrics = JSON.stringify({
+      ...summarizeFrameTimes(samples.current),
+      drawCalls: peakCalls.current,
+      triangles: peakTriangles.current,
+      geometries: gl.info.memory.geometries,
+      textures: gl.info.memory.textures,
+      shaderPrograms: gl.info.programs?.length ?? 0,
+      sampleFrames: samples.current.length,
+    });
+    samples.current = [];
+    peakCalls.current = 0;
+    peakTriangles.current = 0;
+  });
+  return null;
+}
 
 function useDeferredQueue() {
   const pendingTimers = useRef(new Set<number>());
@@ -417,7 +446,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
         <Canvas
         shadows="basic"
         camera={{ fov: 54, near: 0.08, far: 180, position: [2.4, 4.5, 25] }}
-        dpr={[1, 1.7]}
+        dpr={[1, 1.25]}
         gl={{ antialias: true, powerPreference: "high-performance" }}
         onCreated={({ gl, scene }) => {
           sceneRef.current = scene;
@@ -425,16 +454,17 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
           gl.toneMappingExposure = 1.08;
         }}
       >
-        <color attach="background" args={["#141719"]} />
-        <fog attach="fog" args={["#292723", 30, 100]} />
+        <color attach="background" args={["#101826"]} />
+        <fog attach="fog" args={["#3b2d25", 24, 92]} />
         <Atmosphere />
-        <hemisphereLight args={["#9eb7c8", "#3b251a", 1.8]} />
+        <PerformanceProbe />
+        <hemisphereLight args={["#7898b5", "#4a281b", 1.45]} />
         <directionalLight
           castShadow
           color="#ffe2bd"
-          intensity={3.2}
-          position={[14, 24, 10]}
-          shadow-mapSize={[2048, 2048]}
+          intensity={2.7}
+          position={[-14, 18, 8]}
+          shadow-mapSize={[1024, 1024]}
           shadow-camera-left={-34}
           shadow-camera-right={34}
           shadow-camera-top={34}

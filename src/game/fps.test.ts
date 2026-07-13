@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateFps } from "./fps";
+import { calculateFps, summarizeFrameTimes } from "./fps";
 
 describe("FPS sampling", () => {
   it("reports frames per second across the measured interval", () => {
@@ -14,5 +14,11 @@ describe("FPS sampling", () => {
   it("returns zero until a valid interval has been measured", () => {
     expect(calculateFps(0, 500)).toBe(0);
     expect(calculateFps(30, 0)).toBe(0);
+  });
+});
+
+describe("frame-time evidence", () => {
+  it("reports average, p95, and maximum frame time", () => {
+    expect(summarizeFrameTimes([10, 12, 14, 16, 30])).toEqual({ averageMs: 16.4, p95Ms: 30, maxMs: 30 });
   });
 });
