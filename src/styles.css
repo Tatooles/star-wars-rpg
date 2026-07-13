@@ -169,7 +169,7 @@ kbd { min-width: 5.8rem; padding: .35rem .48rem; border: 1px solid #3a4858; bord
 .input-touch .objective-block { top: max(.8rem, env(safe-area-inset-top)); right: max(3.9rem, calc(env(safe-area-inset-right) + 3.5rem)); max-width: 34vw; }
 .input-touch .fps-counter { left: max(7rem, calc(env(safe-area-inset-left) + 6.5rem)); top: max(.58rem, calc(env(safe-area-inset-top) + .25rem)); bottom: auto; min-width: 0; padding: .15rem .3rem; border: 0; background: transparent; font-size: .56rem; }
 .input-touch .health-header .fps-counter { position: static; padding: 0; }
-.input-touch .boss-health { top: max(3.05rem, calc(env(safe-area-inset-top) + 2.6rem)); width: min(14rem, 28vw); gap: .2rem; padding: .28rem .45rem .34rem; }
+.input-touch .boss-health { top: max(.8rem, env(safe-area-inset-top)); width: min(14rem, 28vw); gap: .2rem; padding: .28rem .45rem .34rem; }
 .input-touch .boss-health::before, .input-touch .boss-health::after { width: 1.55rem; height: .14rem; }
 .input-touch .boss-health-copy { gap: .12rem; }
 .input-touch .boss-health-copy span, .input-touch .boss-health-header strong { display: none; }
