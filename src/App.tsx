@@ -3,6 +3,8 @@ import { ProceduralAudio, type SoundCue } from "./game/audio";
 import { getActiveBoss } from "./game/bossHudModel";
 import { FpsCounter } from "./game/FpsCounter";
 import { createSession, formatMissionTime, sessionReducer } from "./game/session";
+import { usePerformanceWarning } from "./game/usePerformanceWarning";
+import { useExperienceMode } from "./useExperienceMode";
 
 const GameScene = lazy(() =>
   import("./game/GameScene").then((module) => ({ default: module.GameScene })),
@@ -50,6 +52,19 @@ export function App() {
     dispatch({ type: "RESUME", nowMs: performance.now() });
   }, [audio]);
 
+  const {
+    enterFullscreen,
+    fullscreenSupported,
+    inputMode,
+    portrait,
+    touchMode,
+    webGlSupported,
+  } = useExperienceMode(pause);
+  const performanceWarning = usePerformanceWarning(
+    touchMode && screen === "playing",
+    session.runId,
+  );
+
   useEffect(() => {
     if (session.player.health < previousHealth.current) audio.play("hurt");
     if (session.enemiesDefeated > previousDefeats.current) audio.play("destroy");
@@ -73,30 +88,43 @@ export function App() {
     const onVisibilityChange = () => {
       if (document.visibilityState === "hidden" && screen === "playing") pause();
     };
+    const onWindowBlur = () => pause();
     document.addEventListener("visibilitychange", onVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("blur", onWindowBlur);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("blur", onWindowBlur);
+    };
   }, [pause, screen]);
 
   const playSound = useCallback((cue: SoundCue) => audio.play(cue), [audio]);
-
   return (
-    <main className="app-shell">
-      <div className="mobile-blocker" role="dialog" aria-labelledby="mobile-title">
+    <main className={`app-shell input-${inputMode}${touchMode && portrait ? " is-portrait" : ""}`}>
+      <div className="orientation-blocker" role="dialog" aria-labelledby="orientation-title">
         <div className="mobile-emblem" aria-hidden="true">◈</div>
-        <p className="eyebrow">TRANSMISSION INTERRUPTED</p>
-        <h1 id="mobile-title">Desktop required</h1>
-        <p>
-          Star Wars: Break the Signal is not ready for mobile yet. Open it on a
-          desktop or laptop to play.
-        </p>
+        <p className="eyebrow">ROTATION REQUIRED</p>
+        <h1 id="orientation-title">Turn to landscape</h1>
+        <p>Rotate your device to continue the mission.</p>
       </div>
 
       <div className="desktop-experience">
         <div className="stars" aria-hidden="true" />
         <div className="horizon" aria-hidden="true" />
-        <FpsCounter />
+        {(!touchMode || screen === "title") && (
+          <FpsCounter onSample={performanceWarning.sample} />
+        )}
 
-        {screen === "title" && (
+        {!webGlSupported && (
+          <section className="unsupported-device overlay" role="alert">
+            <div className="overlay-card">
+              <p className="eyebrow">SYSTEM INCOMPATIBLE</p>
+              <h2>Device not supported</h2>
+              <p>This browser could not start the WebGL renderer required by the mission.</p>
+            </div>
+          </section>
+        )}
+
+        {webGlSupported && screen === "title" && (
           <section className="title-screen">
             <div className="title-copy">
               <p className="eyebrow">A JEDI MISSION</p>
@@ -109,12 +137,17 @@ export function App() {
                 As Anakin Skywalker, breach the outpost, destroy its droid
                 defenders, and silence the signal.
               </p>
-              <button className="primary-action" onClick={startMission}>
-                Start Mission <span aria-hidden="true">→</span>
-              </button>
+              <div className="title-actions">
+                <button className="primary-action" onClick={startMission}>
+                  Start Mission <span aria-hidden="true">→</span>
+                </button>
+                {touchMode && fullscreenSupported && (
+                  <button className="fullscreen-action" onClick={enterFullscreen}>Fullscreen</button>
+                )}
+              </div>
             </div>
 
-            <aside className="controls-card" aria-label="Controls">
+            <aside className="controls-card desktop-controls-card" aria-label="Keyboard and mouse controls">
               <p className="panel-label">CONTROLS</p>
               <div className="control-grid">
                 {controls.map(([key, action]) => (
@@ -125,6 +158,14 @@ export function App() {
                 ))}
               </div>
               <p className="controls-note">ESC to pause</p>
+            </aside>
+            <aside className="controls-card touch-controls-card" aria-label="Touch controls">
+              <p className="panel-label">TOUCH CONTROLS</p>
+              <div className="touch-control-diagram" aria-hidden="true">
+                <span className="diagram-stick">MOVE<br />TURN</span>
+                <span className="diagram-actions"><b>BLOCK</b><b>LOCK</b><b>DODGE</b><strong>ATTACK</strong></span>
+              </div>
+              <p className="controls-note">Landscape play · Pause anytime</p>
             </aside>
           </section>
         )}
@@ -141,11 +182,16 @@ export function App() {
                 session={session}
                 dispatch={dispatch}
                 onSound={playSound}
+                mobile={touchMode}
+                onPause={pause}
               />
             </Suspense>
             <div className="combat-hud">
               <div className="health-block">
-                <span>ANAKIN</span>
+                <div className="health-header">
+                  <span>ANAKIN</span>
+                  {touchMode && <FpsCounter onSample={performanceWarning.sample} />}
+                </div>
                 <div className="health-track">
                   <i style={{ width: `${(session.player.health / session.player.maxHealth) * 100}%` }} />
                 </div>
@@ -184,6 +230,15 @@ export function App() {
               )}
             </div>
             <div className="reticle" aria-hidden="true" />
+            {performanceWarning.visible && touchMode && (
+              <div className="performance-warning" role="status">
+                <span>Performance is below 30 FPS. Closing other apps may help.</span>
+                <button
+                  onClick={performanceWarning.dismiss}
+                  aria-label="Dismiss performance warning"
+                >×</button>
+              </div>
+            )}
           </section>
         )}
 
@@ -196,7 +251,11 @@ export function App() {
               <button className="secondary-action" onClick={startMission}>
                 Restart Mission
               </button>
-              <p className="controls-note">W/S move · A/D turn · Space attack · F block · Q lock</p>
+              <p className="controls-note">
+                {touchMode
+                  ? "Joystick move/turn · Hold Block · Tap Attack, Dodge, or Lock"
+                  : "W/S move · A/D turn · Space attack · F block · Q lock"}
+              </p>
             </div>
           </section>
         )}

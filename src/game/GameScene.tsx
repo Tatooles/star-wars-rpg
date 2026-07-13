@@ -23,12 +23,15 @@ import type { GameSession, PlayerCombatState, SessionAction } from "./session";
 import { useControls, type Controls } from "./useControls";
 import type { SoundCue } from "./audio";
 import { B2_TUNING, PLAYER_TUNING } from "./combatTuning";
+import { MobileControls } from "./MobileControls";
 
 type GameSceneProps = {
   playing: boolean;
   session: GameSession;
   dispatch: Dispatch<SessionAction>;
   onSound: (cue: SoundCue) => void;
+  mobile: boolean;
+  onPause: () => void;
 };
 
 type ImpactState = {
@@ -260,14 +263,14 @@ function EncounterGate({ z }: { z: number }) {
   );
 }
 
-export function GameScene({ playing, session, dispatch, onSound }: GameSceneProps) {
+export function GameScene({ playing, session, dispatch, onSound, mobile, onPause }: GameSceneProps) {
   const playerRef = useRef<RapierRigidBody>(null);
   const enemyBodies = useRef(new Map<string, RapierRigidBody>());
   const enemyPositions = useRef(new Map<string, THREE.Vector3>());
   const lockedTargetPositionRef = useRef<THREE.Vector3>(null);
   const sceneRef = useRef<THREE.Scene>(null);
   const yawRef = useRef(Math.PI) as MutableRefObject<number>;
-  const { controls } = useControls(playing);
+  const { controls, touchControls } = useControls(playing, !mobile);
   const blockingRef = useRef(false);
   const invulnerableRef = useRef(false);
   const controlLockUntilRef = useRef(0);
@@ -417,8 +420,8 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
         <Canvas
         shadows="basic"
         camera={{ fov: 54, near: 0.08, far: 180, position: [2.4, 4.5, 25] }}
-        dpr={[1, 1.7]}
-        gl={{ antialias: true, powerPreference: "high-performance" }}
+        dpr={mobile ? [1, 1.25] : [1, 1.7]}
+        gl={{ antialias: !mobile, powerPreference: "high-performance" }}
         onCreated={({ gl, scene }) => {
           sceneRef.current = scene;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
@@ -434,7 +437,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
           color="#ffe2bd"
           intensity={3.2}
           position={[14, 24, 10]}
-          shadow-mapSize={[2048, 2048]}
+          shadow-mapSize={mobile ? [1024, 1024] : [2048, 2048]}
           shadow-camera-left={-34}
           shadow-camera-right={34}
           shadow-camera-top={34}
@@ -551,8 +554,15 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
         />
         </Canvas>
       </div>
-      {beaconNearby && !session.beaconDisabled && (
+      {!mobile && beaconNearby && !session.beaconDisabled && (
         <div className="interaction-prompt"><kbd>E</kbd> Disable beacon</div>
+      )}
+      {mobile && playing && (
+        <MobileControls
+          controls={touchControls}
+          beaconNearby={beaconNearby && !session.beaconDisabled}
+          onPause={onPause}
+        />
       )}
     </>
   );
