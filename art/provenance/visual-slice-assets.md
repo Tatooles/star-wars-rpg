@@ -6,7 +6,7 @@ This manifest covers the replacement-visual vertical slice only. Runtime binarie
 
 - Runtime: `public/assets/models/anakin.glb`
 - Editable source: `art/blender/characters/anakin.blend`
-- SHA-256: `6aecb214ff7b98316dba55539ea2a1af3fd751c7747d64910a3c67ec3324b347`
+- SHA-256: `8b14cdcf128ae829a9d91e7aa8f7d94b95d40a47d857fce49a2eb16f438a1293`
 - Base generator: MakeHuman/MPFB official system assets
 - Garment pack: MakeHuman Community `suits02`, using `donitz_monk_robe`
 - Creator/publisher: MakeHuman Community contributors / MakeHuman Community asset repository
@@ -21,7 +21,7 @@ This manifest covers the replacement-visual vertical slice only. Runtime binarie
 - License: CC0 1.0 for exported MakeHuman characters and the named official asset-pack content, as stated on the linked project pages.
 - Exact license record: https://creativecommons.org/publicdomain/zero/1.0/legalcode
 - Attribution requirement: none under CC0. Source and creator/publisher are still recorded above; no in-game attribution is required.
-- Project-authored changes: body proportions, garment island removal/cropping, materials, removal of failed floating upper overlays, rest-pose conformance and 26-group weight transfer for retained lower tabards, fitted front/side utility belt, removal of the redundant floating belt hilt, natural arm poses across all five actions, calibrated run/backpedal actions, hidden-body removal below the intact neck, WebP/Draco runtime export.
+- Project-authored changes: body proportions, garment island removal/cropping, materials, removal of failed floating upper overlays, rest-pose conformance and 26-group weight transfer for retained lower tabards, fitted front/side utility belt, removal of the redundant floating belt hilt, natural arm poses across all five actions, linear locomotion keys, tightened attack spacing, sustained block pose, calibrated run/backpedal actions, hidden-body removal below the intact neck, WebP/Draco runtime export.
 
 ## B1 battle droid
 

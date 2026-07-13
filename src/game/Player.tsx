@@ -7,6 +7,7 @@ import {
 import { RefObject, useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { AnakinModel, type CombatPose } from "./AnakinModel";
+import { shouldAttemptSaberHit } from "./visualAssets";
 import { PLAYER_TUNING } from "./combatTuning";
 import { resolveMovementFrame } from "./controlModel";
 import type { PlayerCombatState } from "./session";
@@ -59,6 +60,7 @@ export function Player({
   const attackDuration = useRef<number>(PLAYER_TUNING.attackDurations[0]);
   const comboStep = useRef(0);
   const hitThisSwing = useRef(new Set<string>());
+  const hitAttemptsThisSwing = useRef(0);
   const dodgeTime = useRef(0);
   const dodgeCooldown = useRef(0);
   const pose = useRef<CombatPose>({
@@ -103,6 +105,7 @@ export function Player({
   useEffect(() => {
     if (playing) return;
     attackTime.current = 0;
+    hitAttemptsThisSwing.current = 0;
     dodgeTime.current = 0;
     dodgeCooldown.current = 0;
     blockingRef.current = false;
@@ -174,6 +177,7 @@ export function Player({
       attackDuration.current = PLAYER_TUNING.attackDurations[comboStep.current];
       attackTime.current = attackDuration.current;
       hitThisSwing.current.clear();
+      hitAttemptsThisSwing.current = 0;
       onSound((`swing${comboStep.current + 1}`) as SoundCue);
     }
     lastAttackPress.current = input.attackPresses;
@@ -181,11 +185,13 @@ export function Player({
     const progress = 1 - attackTime.current / attackDuration.current;
     pose.current.attacking = attackTime.current > 0;
     pose.current.attackProgress = THREE.MathUtils.clamp(progress, 0, 1);
-    if (
-      pose.current.attacking &&
-      pose.current.attackProgress >= PLAYER_TUNING.attackHitWindow.start &&
-      pose.current.attackProgress <= PLAYER_TUNING.attackHitWindow.end
-    ) {
+    if (shouldAttemptSaberHit({
+      attacking: pose.current.attacking,
+      progress: pose.current.attackProgress,
+      attempts: hitAttemptsThisSwing.current,
+      alreadyHit: hitThisSwing.current.size > 0,
+    })) {
+      hitAttemptsThisSwing.current += 1;
       const assistedEnemyId = getAssistedEnemyId(
         PLAYER_TUNING.attackReach,
         new THREE.Vector3(bodyPosition.x, bodyPosition.y, bodyPosition.z),

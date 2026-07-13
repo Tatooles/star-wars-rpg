@@ -3,7 +3,7 @@ import { createPortal, useFrame } from "@react-three/fiber";
 import { useAnimations, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
-import { anakinLocomotionTimeScale, selectAnakinActionKey, selectAnakinClip, visualAssetManifest } from "./visualAssets";
+import { anakinAttackTimeScale, anakinLocomotionTimeScale, selectAnakinActionKey, selectAnakinClip, shouldCrossfadeAnakinAction, visualAssetManifest } from "./visualAssets";
 
 type AnakinModelProps = {
   moving: RefObject<boolean>;
@@ -84,9 +84,20 @@ export function AnakinModel({ moving, backpedaling, movementSpeed, combatPose }:
       const previousClip = activeClip.current?.split(":")[0];
       const previous = previousClip ? actionMap.current[previousClip] : undefined;
       const next = actionMap.current[nextClip];
-      previous?.fadeOut(0.12);
-      next?.reset().fadeIn(0.12).play();
-      next?.setLoop(nextClip === "Attack1" ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
+      const crossfades = shouldCrossfadeAnakinAction(previousClip, nextClip);
+      if (crossfades) previous?.fadeOut(0.18);
+      if (next) {
+        next.reset();
+        if (crossfades) next.fadeIn(0.18);
+        else next.setEffectiveWeight(1);
+        next.play();
+      }
+      const playsOnce = nextClip === "Attack1" || nextClip === "Block";
+      next?.setLoop(playsOnce ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
+      if (next) next.clampWhenFinished = playsOnce;
+      if (nextClip === "Attack1" && next) {
+        next.timeScale = anakinAttackTimeScale(pose.comboStep, next.getClip().duration);
+      }
       if ((nextClip === "Run" || nextClip === "Backpedal") && next) {
         next.timeScale = anakinLocomotionTimeScale(movementSpeed.current);
       }

@@ -56,10 +56,13 @@ Blender 5.1.2 successfully re-imported both checked-in GLBs:
 
 - Anakin: 12 imported character mesh nodes and 41,608 character triangles. Actions: `Idle`, `Run`, `Backpedal`, `Attack1`, `Block`. The exported hip hilt is absent and the idle arm bones contain authored non-zero rotations.
 - B1: merged five-material rigid rig, 5,792 triangles, actions `Idle`, `Walk`, `Fire`, `Hit`.
+- Animation continuity follow-up: attack maximum authored joint step reduced from 23.4° to 10.5°, block from 19.6° to 6.4°, and run from 8.5° to 5.5°. Attack endpoints match idle within 0.1° and runtime playback is fitted to each combo duration.
+- B1 runtime grounding uses a 0.70 body height and -0.745 visual offset, placing both the capsule bottom and measured 0.045-unit asset sole clearance on the ground plane.
+- Saber hit assistance selects candidates cheaply and performs at most one cached-obstacle raycast per attempt, with one attempt after a hit and a three-attempt budget after misses; the deterministic hit repro previously measured 19–24 full-scene queries per swing.
 
 ## Automated verification
 
-- `pnpm test`: 10 files, 37 tests passed.
+- `pnpm test`: 10 files, 41 tests passed.
 - `pnpm lint`: passed.
 - `pnpm build`: passed; existing large `GameScene` chunk warning remains.
 - `git diff --check`: passed.

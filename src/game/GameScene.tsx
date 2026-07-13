@@ -295,6 +295,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
   const enemyPositions = useRef(new Map<string, THREE.Vector3>());
   const lockedTargetPositionRef = useRef<THREE.Vector3>(null);
   const sceneRef = useRef<THREE.Scene>(null);
+  const meleeObstacleMeshes = useRef<THREE.Object3D[]>([]);
   const yawRef = useRef(Math.PI) as MutableRefObject<number>;
   const { controls } = useControls(playing);
   const blockingRef = useRef(false);
@@ -332,8 +333,7 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
         playerRotation,
       );
       const origin = new THREE.Vector3(playerPosition.x, playerPosition.y + 0.65, playerPosition.z);
-      const ray = new THREE.Raycaster();
-      let nearest: { id: string; score: number } | null = null;
+      let nearest: { id: string; score: number; position: THREE.Vector3 } | null = null;
       for (const enemy of session.enemies) {
         if (!enemy.alive || enemy.encounter > session.activeEncounter) continue;
         const position = enemyPositions.current.get(enemy.id);
@@ -349,29 +349,37 @@ export function GameScene({ playing, session, dispatch, onSound }: GameSceneProp
         const facing = forward.dot(toEnemy);
         if (facing < PLAYER_TUNING.attackFacingThreshold) continue;
 
-        const target = new THREE.Vector3(position.x, position.y + 0.7, position.z);
-        const line = target.clone().sub(origin);
-        const lineLength = line.length();
-        ray.set(origin, line.clone().normalize());
-        ray.far = lineLength;
-        const obstruction = ray
-          .intersectObjects(sceneRef.current?.children ?? [], true)
-          .find((hit) => {
-            if (hit.distance >= lineLength - PLAYER_TUNING.targetContactRadius) return false;
-            let object: THREE.Object3D | null = hit.object;
-            while (object) {
-              if (object.userData.cameraObstacle) return true;
-              object = object.parent;
-            }
-            return false;
-          });
-        if (obstruction) continue;
-
         const lockedBonus = enemy.id === session.lockedTargetId ? -range : 0;
         const score = distance + (1 - facing) * range + lockedBonus;
-        if (!nearest || score < nearest.score) nearest = { id: enemy.id, score };
+        if (!nearest || score < nearest.score) nearest = { id: enemy.id, score, position };
       }
-      return nearest?.id ?? null;
+      if (!nearest) return null;
+
+      if (meleeObstacleMeshes.current.length === 0 && sceneRef.current) {
+        sceneRef.current.traverse((object) => {
+          if (!(object instanceof THREE.Mesh)) return;
+          let ancestor: THREE.Object3D | null = object;
+          while (ancestor) {
+            if (ancestor.userData.cameraObstacle) {
+              meleeObstacleMeshes.current.push(object);
+              return;
+            }
+            ancestor = ancestor.parent;
+          }
+        });
+      }
+      const target = new THREE.Vector3(
+        nearest.position.x,
+        nearest.position.y + 0.7,
+        nearest.position.z,
+      );
+      const line = target.sub(origin);
+      const lineLength = line.length();
+      const ray = new THREE.Raycaster(origin, line.normalize(), 0, lineLength);
+      const obstruction = ray.intersectObjects(meleeObstacleMeshes.current, false)[0];
+      return obstruction && obstruction.distance < lineLength - PLAYER_TUNING.targetContactRadius
+        ? null
+        : nearest.id;
     },
     [session.activeEncounter, session.enemies, session.lockedTargetId],
   );

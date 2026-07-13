@@ -7,7 +7,7 @@ import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import type { EnemyState } from "./session";
 import { B1_TUNING } from "./combatTuning";
 import { EnemyIndicator } from "./EnemyIndicator";
-import { selectB1Clip, visualAssetManifest } from "./visualAssets";
+import { B1_GROUNDING, selectB1Clip, visualAssetManifest } from "./visualAssets";
 
 export type ProjectileSpawn = {
   position: THREE.Vector3;
@@ -151,12 +151,12 @@ export function B1Droid({
       ref={bodyRef}
       type="kinematicPosition"
       colliders={false}
-      position={enemy.position}
+      position={[enemy.position[0], B1_GROUNDING.bodyY, enemy.position[2]]}
       name={`enemy-${enemy.id}`}
     >
       <CapsuleCollider args={[0.52, 0.38]} position={[0, 0.2, 0]} />
       <group ref={model}>
-        <primitive object={visual} position={[0, -0.55, 0]} rotation={[0, Math.PI, 0]} />
+        <primitive object={visual} position={[0, B1_GROUNDING.modelOffsetY, 0]} rotation={[0, Math.PI, 0]} />
         <pointLight
           ref={telegraphLight}
           color="#5e160d"
