@@ -2,6 +2,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import type { RapierRigidBody } from "@react-three/rapier";
 import { RefObject, useRef } from "react";
 import * as THREE from "three";
+import { intersectObstacles } from "./obstacleRaycast";
 import { advanceCameraYaw } from "./controlModel";
 import { resolveCameraLockPosition } from "./cameraTarget";
 import type { Controls } from "./useControls";
@@ -11,6 +12,7 @@ type CameraRigProps = {
   yawRef: RefObject<number>;
   controls: RefObject<Controls>;
   enabled: boolean;
+  showcase?: boolean;
   lockedTargetId: string | null;
   lockedTargetPositionRef: RefObject<THREE.Vector3 | null>;
 };
@@ -22,6 +24,7 @@ export function CameraRig({
   yawRef,
   controls,
   enabled,
+  showcase = false,
   lockedTargetId,
   lockedTargetPositionRef,
 }: CameraRigProps) {
@@ -29,7 +32,12 @@ export function CameraRig({
   const currentPosition = useRef(new THREE.Vector3(2.4, 4.5, 25));
   const raycaster = useRef(new THREE.Raycaster());
 
-  useFrame((_, delta) => {
+  useFrame(({ clock }, delta) => {
+    if (showcase) {
+      camera.position.set(-8 + Math.sin(clock.elapsedTime * 0.06) * 0.6, 5.2, 28);
+      camera.lookAt(4, 2.2, -8);
+      return;
+    }
     const body = playerRef.current;
     if (!body) return;
     const translation = body.translation();
@@ -74,16 +82,7 @@ export function CameraRig({
     const collisionRay = raycaster.current;
     collisionRay.set(target, direction);
     collisionRay.far = desiredDistance;
-    const obstruction = collisionRay
-      .intersectObjects(scene.children, true)
-      .find((hit) => {
-        let object: THREE.Object3D | null = hit.object;
-        while (object) {
-          if (object.userData.cameraObstacle) return true;
-          object = object.parent;
-        }
-        return false;
-      });
+    const obstruction = intersectObstacles(collisionRay, scene.children)[0];
 
     if (obstruction) {
       desired.copy(target).addScaledVector(direction, Math.max(1.4, obstruction.distance - 0.35));

@@ -5,6 +5,7 @@ import * as THREE from "three";
 import type { ProjectileSpawn } from "./B1Droid";
 import type { EnemyState } from "./session";
 import { B2_TUNING } from "./combatTuning";
+import { SuperBattleDroidModel } from "./DroidModels";
 import { EnemyIndicator } from "./EnemyIndicator";
 
 type B2DroidProps = {
@@ -17,9 +18,6 @@ type B2DroidProps = {
   onFire: (spawn: ProjectileSpawn) => void;
   onMelee: (direction: THREE.Vector3) => void;
 };
-
-const armor = new THREE.MeshStandardMaterial({ color: "#35424b", roughness: 0.42, metalness: 0.7 });
-const armorDark = new THREE.MeshStandardMaterial({ color: "#151c21", roughness: 0.5, metalness: 0.65 });
 
 export function B2Droid({
   enemy,
@@ -36,7 +34,7 @@ export function B2Droid({
   const burstShots = useRef(0);
   const burstTimer = useRef(0);
   const meleeCooldown = useRef(0);
-  const muzzleFlash = useRef<THREE.PointLight>(null);
+  const muzzleFlash = useRef<THREE.Mesh>(null);
   const model = useRef<THREE.Group>(null);
   const lastHealth = useRef(enemy.health);
   const hitReaction = useRef(0);
@@ -98,9 +96,9 @@ export function B2Droid({
       onFire({ position: muzzle, direction: target.sub(muzzle).normalize(), sourceId: enemy.id });
       burstShots.current -= 1;
       burstTimer.current = B2_TUNING.burstSpacing;
-      if (muzzleFlash.current) muzzleFlash.current.intensity = 12;
+      if (muzzleFlash.current) (muzzleFlash.current.material as THREE.MeshBasicMaterial).opacity = 0.9;
     }
-    if (muzzleFlash.current) muzzleFlash.current.intensity *= Math.exp(-delta * 18);
+    if (muzzleFlash.current) (muzzleFlash.current.material as THREE.MeshBasicMaterial).opacity *= Math.exp(-delta * 18);
   });
 
   if (!enemy.alive) return null;
@@ -115,29 +113,11 @@ export function B2Droid({
     >
       <CapsuleCollider args={[0.85, 0.68]} position={[0, 0.25, 0]} />
       <group ref={model}>
-        <mesh material={armor} position={[0, 1.7, 0]} castShadow>
-          <boxGeometry args={[1.05, 0.72, 0.72]} />
+        <SuperBattleDroidModel />
+        <mesh ref={muzzleFlash} position={[0.74, 0.94, 0.95]}>
+          <sphereGeometry args={[0.16, 8, 6]} />
+          <meshBasicMaterial color="#ff5030" transparent opacity={0} depthWrite={false} toneMapped={false} />
         </mesh>
-        <mesh material={armorDark} position={[0, 1.72, 0.39]} castShadow>
-          <boxGeometry args={[0.72, 0.18, 0.12]} />
-        </mesh>
-        <mesh material={armor} position={[0, 0.72, 0]} castShadow>
-          <cylinderGeometry args={[0.62, 0.76, 1.2, 8]} />
-        </mesh>
-        {[-1, 1].map((side) => (
-          <group key={side}>
-            <mesh material={armor} position={[side * 0.68, 1.03, 0]} rotation={[0, 0, side * 0.08]} castShadow>
-              <capsuleGeometry args={[0.18, 0.95, 5, 8]} />
-            </mesh>
-            <mesh material={armorDark} position={[side * 0.32, -0.18, 0]} castShadow>
-              <capsuleGeometry args={[0.2, 1.12, 5, 8]} />
-            </mesh>
-          </group>
-        ))}
-        <mesh material={armorDark} position={[0.68, 0.9, 0.52]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-          <cylinderGeometry args={[0.12, 0.18, 0.82, 8]} />
-        </mesh>
-        <pointLight ref={muzzleFlash} color="#ff3c1f" intensity={0} distance={5} position={[0.68, 0.9, 0.9]} />
       </group>
       <EnemyIndicator
         bodyRef={bodyRef}

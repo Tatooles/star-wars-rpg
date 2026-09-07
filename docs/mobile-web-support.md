@@ -21,7 +21,9 @@ Star Wars: Break the Signal supports browser play on touch-first phones and tabl
 
 - Mobile layouts respect dynamic viewport height and safe-area insets.
 - The FPS counter remains visible beside the player-health label.
-- Mobile rendering targets 60 FPS with a stable 30 FPS minimum by reducing maximum device-pixel ratio, shadow resolution, and antialiasing cost.
+- Mobile rendering targets 60 FPS with a stable 30 FPS minimum by reducing maximum device-pixel ratio, shadow resolution, antialiasing cost, and the number of instanced canyon rocks and rubble pieces. Desktop bloom is disabled on touch devices. These are targets; physical-device performance must be measured.
+- The title screen previews the actual outpost. Shared 1K surface textures load locally on both desktop and mobile; provenance is recorded in `public/textures/README.md`.
+- Decorative scenery is excluded from gameplay visibility raycasts. Blaster bolts and muzzle flashes use emissive geometry to avoid changing the scene-light count during combat.
 - Sustained performance below 30 FPS produces a dismissible warning.
 - Supported browsers may offer a user-initiated fullscreen button; fullscreen is never forced.
 - iPhone and iPad users can add the game to the Home Screen for an explicit standalone, landscape-oriented experience without Safari toolbars.

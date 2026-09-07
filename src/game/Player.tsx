@@ -14,6 +14,7 @@ import type { Controls } from "./useControls";
 import type { SoundCue } from "./audio";
 
 type PlayerProps = {
+  preview?: boolean;
   bodyRef: RefObject<RapierRigidBody | null>;
   cameraYaw: RefObject<number>;
   controls: RefObject<Controls>;
@@ -34,6 +35,7 @@ type PlayerProps = {
 };
 
 export function Player({
+  preview = false,
   bodyRef,
   cameraYaw,
   controls,
@@ -204,7 +206,7 @@ export function Player({
     <RigidBody
       ref={bodyRef}
       colliders={false}
-      position={[0, 2.1, 18]}
+      position={[0, preview ? 0.95 : 2.1, 18]}
       rotation={[0, Math.PI, 0]}
       enabledRotations={[false, false, false]}
       linearDamping={8}

@@ -13,6 +13,9 @@ import * as THREE from "three";
 import { B1Droid, type ProjectileSpawn } from "./B1Droid";
 import { B2Droid } from "./B2Droid";
 import { Beacon } from "./Beacon";
+import { intersectObstacles } from "./obstacleRaycast";
+import { CinematicEffects } from "./CinematicEffects";
+import { SurfaceAssets } from "./SurfaceAssets";
 import { Atmosphere } from "./Atmosphere";
 import { CameraRig } from "./CameraRig";
 import { Outpost } from "./Outpost";
@@ -196,16 +199,7 @@ function MissionDirector({
         direction.normalize();
         lineOfSightRay.current.set(origin, direction);
         lineOfSightRay.current.far = rayDistance;
-        const obstruction = lineOfSightRay.current
-          .intersectObjects(scene.children, true)
-          .find((hit) => {
-            let object: THREE.Object3D | null = hit.object;
-            while (object) {
-              if (object.userData.cameraObstacle) return true;
-              object = object.parent;
-            }
-            return false;
-          });
+        const obstruction = intersectObstacles(lineOfSightRay.current, scene.children)[0];
         const visible = !obstruction;
         lineOfSightLostFor.current = visible ? 0 : lineOfSightLostFor.current + delta;
         if (distance > 28 || lineOfSightLostFor.current > 1.1) {
@@ -328,17 +322,8 @@ export function GameScene({ playing, session, dispatch, onSound, mobile, onPause
         const lineLength = line.length();
         ray.set(origin, line.clone().normalize());
         ray.far = lineLength;
-        const obstruction = ray
-          .intersectObjects(sceneRef.current?.children ?? [], true)
-          .find((hit) => {
-            if (hit.distance >= lineLength - PLAYER_TUNING.targetContactRadius) return false;
-            let object: THREE.Object3D | null = hit.object;
-            while (object) {
-              if (object.userData.cameraObstacle) return true;
-              object = object.parent;
-            }
-            return false;
-          });
+        const obstruction = intersectObstacles(ray, sceneRef.current?.children ?? [])
+          .find((hit) => hit.distance < lineLength - PLAYER_TUNING.targetContactRadius);
         if (obstruction) continue;
 
         const lockedBonus = enemy.id === session.lockedTargetId ? -range : 0;
@@ -418,36 +403,43 @@ export function GameScene({ playing, session, dispatch, onSound, mobile, onPause
     <>
       <div className="canvas-input-surface">
         <Canvas
-        shadows="basic"
-        camera={{ fov: 54, near: 0.08, far: 180, position: [2.4, 4.5, 25] }}
+        shadows="percentage"
+        camera={{ fov: 54, near: 0.08, far: 300, position: [2.4, 4.5, 25] }}
         dpr={mobile ? [1, 1.25] : [1, 1.7]}
         gl={{ antialias: !mobile, powerPreference: "high-performance" }}
         onCreated={({ gl, scene }) => {
           sceneRef.current = scene;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.08;
+          gl.toneMappingExposure = 1.12;
         }}
       >
-        <color attach="background" args={["#141719"]} />
-        <fog attach="fog" args={["#292723", 30, 100]} />
+        <color attach="background" args={["#c2aa91"]} />
+        <fog attach="fog" args={["#c2aa91", 38, 155]} />
+        {!mobile && <CinematicEffects />}
+        <SurfaceAssets />
         <Atmosphere />
-        <hemisphereLight args={["#9eb7c8", "#3b251a", 1.8]} />
+        <directionalLight color="#c5dded" intensity={1.1} position={[18, 15, 26]} />
+        <hemisphereLight args={["#b9d6e8", "#887052", 2.0]} />
         <directionalLight
           castShadow
-          color="#ffe2bd"
-          intensity={3.2}
-          position={[14, 24, 10]}
+          color="#ffe0af"
+          intensity={3.4}
+          position={[-32, 38, -25]}
           shadow-mapSize={mobile ? [1024, 1024] : [2048, 2048]}
-          shadow-camera-left={-34}
-          shadow-camera-right={34}
-          shadow-camera-top={34}
-          shadow-camera-bottom={-34}
+          shadow-normalBias={0.045}
+          shadow-bias={-0.00015}
+          shadow-camera-far={130}
+          shadow-camera-left={-46}
+          shadow-camera-right={46}
+          shadow-camera-top={55}
+          shadow-camera-bottom={-55}
         />
         <pointLight color="#ef713c" intensity={22} distance={48} position={[-16, 4, -44]} />
         <Physics paused={!playing} gravity={[0, -20, 0]}>
-          <Outpost />
+          <Outpost mobile={mobile} />
           <Beacon disabled={session.beaconDisabled} />
           <Player
+            preview={session.screen === "title"}
             bodyRef={playerRef}
             cameraYaw={yawRef}
             controls={controls}
@@ -545,6 +537,7 @@ export function GameScene({ playing, session, dispatch, onSound, mobile, onPause
           />
         ))}
         <CameraRig
+          showcase={session.screen === "title"}
           playerRef={playerRef}
           yawRef={yawRef}
           controls={controls}

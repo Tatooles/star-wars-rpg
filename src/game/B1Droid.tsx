@@ -4,6 +4,8 @@ import { RefObject, useRef } from "react";
 import * as THREE from "three";
 import type { EnemyState } from "./session";
 import { B1_TUNING } from "./combatTuning";
+import { getEnemyIndicatorGroundOffset } from "./outpostGround";
+import { BattleDroidModel } from "./DroidModels";
 import { EnemyIndicator } from "./EnemyIndicator";
 
 export type ProjectileSpawn = {
@@ -22,9 +24,6 @@ type B1DroidProps = {
   onFire: (spawn: ProjectileSpawn) => void;
 };
 
-const tan = new THREE.MeshStandardMaterial({ color: "#b7a27b", roughness: 0.78, metalness: 0.12 });
-const dark = new THREE.MeshStandardMaterial({ color: "#2a2d2b", roughness: 0.55, metalness: 0.4 });
-
 export function B1Droid({
   enemy,
   playerRef,
@@ -34,6 +33,7 @@ export function B1Droid({
   registerBody,
   onFire,
 }: B1DroidProps) {
+  const walking = useRef(false);
   const bodyRef = useRef<RapierRigidBody>(null);
   const fireTimer = useRef(
     B1_TUNING.initialFireDelay +
@@ -45,7 +45,7 @@ export function B1Droid({
   const lastHealth = useRef(enemy.health);
   const hitReaction = useRef(0);
   const model = useRef<THREE.Group>(null);
-  const telegraphLight = useRef<THREE.PointLight>(null);
+  const telegraphLight = useRef<THREE.Mesh>(null);
 
   useFrame((_, delta) => {
     const body = bodyRef.current;
@@ -55,11 +55,13 @@ export function B1Droid({
     lastHealth.current = enemy.health;
     hitReaction.current = Math.max(0, hitReaction.current - delta);
     if (model.current) {
-      model.current.position.y = Math.sin(performance.now() * 0.004) * 0.025;
+      model.current.position.y = (body ? getEnemyIndicatorGroundOffset(body.translation()) + 0.91 : 0)
+        + (playing ? Math.sin(performance.now() * 0.004) * 0.015 : 0);
       model.current.rotation.z = hitReaction.current > 0
         ? Math.sin(hitReaction.current * 42) * 0.14
         : 0;
     }
+    walking.current = false;
     if (!body || !player || !playing || !active || !enemy.alive) return;
     if (hitReaction.current > 0) return;
     const position = body.translation();
@@ -84,6 +86,7 @@ export function B1Droid({
         move.addScaledVector(strafe, 1.15);
       }
     }
+    walking.current = move.lengthSq() > 0.01;
     const next = new THREE.Vector3(position.x, position.y, position.z).addScaledVector(move, delta);
     const encounterBoundary = enemy.encounter === 1 ? -5 : -26;
     next.x = THREE.MathUtils.clamp(next.x, -4.8, 4.8);
@@ -105,8 +108,7 @@ export function B1Droid({
       if (Math.random() > 0.68) orbitDirection.current *= -1;
     }
     if (telegraphLight.current) {
-      telegraphLight.current.intensity = telegraph.current * 8;
-      telegraphLight.current.color.set(telegraph.current > 0 ? "#ff3b1f" : "#5e160d");
+      (telegraphLight.current.material as THREE.MeshBasicMaterial).opacity = telegraph.current * 0.8;
     }
   });
 
@@ -122,40 +124,17 @@ export function B1Droid({
     >
       <CapsuleCollider args={[0.52, 0.38]} position={[0, 0.2, 0]} />
       <group ref={model}>
-        <mesh material={tan} position={[0, 1.55, 0]} castShadow>
-          <boxGeometry args={[0.46, 0.42, 0.38]} />
+        <BattleDroidModel walking={walking} />
+        <mesh ref={telegraphLight} position={[0.33, 0.675, 1.21]}>
+          <sphereGeometry args={[0.095, 8, 6]} />
+          <meshBasicMaterial color="#ff5030" transparent opacity={0} depthWrite={false} toneMapped={false} />
         </mesh>
-        <mesh material={dark} position={[0, 1.58, 0.22]} castShadow>
-          <boxGeometry args={[0.24, 0.08, 0.12]} />
-        </mesh>
-        <mesh material={tan} position={[0, 0.75, 0]} castShadow>
-          <boxGeometry args={[0.42, 0.82, 0.3]} />
-        </mesh>
-        {[-1, 1].map((side) => (
-          <group key={side}>
-            <mesh material={tan} position={[side * 0.34, 0.82, 0]} rotation={[0, 0, side * 0.08]} castShadow>
-              <capsuleGeometry args={[0.065, 0.72, 4, 6]} />
-            </mesh>
-            <mesh material={tan} position={[side * 0.16, -0.05, 0]} castShadow>
-              <capsuleGeometry args={[0.075, 0.9, 4, 6]} />
-            </mesh>
-          </group>
-        ))}
-        <mesh material={dark} position={[0.4, 0.82, 0.35]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-          <cylinderGeometry args={[0.08, 0.12, 0.85, 7]} />
-        </mesh>
-        <pointLight
-          ref={telegraphLight}
-          color="#5e160d"
-          intensity={0}
-          distance={3}
-          position={[0.4, 0.8, 0.8]}
-        />
       </group>
       <EnemyIndicator
         bodyRef={bodyRef}
         enemy={enemy}
         locked={locked}
+        showHealthBar={active}
       />
     </RigidBody>
   );

@@ -1,6 +1,7 @@
 import { useFrame } from "@react-three/fiber";
 import { BallCollider, RapierRigidBody, RigidBody } from "@react-three/rapier";
-import { RefObject, useRef } from "react";
+import * as THREE from "three";
+import { RefObject, useMemo, useRef } from "react";
 import { PROJECTILE_TUNING } from "./combatTuning";
 
 export type ProjectileState = {
@@ -22,6 +23,9 @@ type ProjectileProps = {
   onEnemyHit: (enemyId: string, damage: number) => void;
 };
 
+const warmCore = new THREE.Color("#ffe2c5").multiplyScalar(2.5);
+const coolCore = new THREE.Color("#b8e9ff").multiplyScalar(2.5);
+
 export function Projectile({
   projectile,
   playing,
@@ -32,6 +36,9 @@ export function Projectile({
   onPlayerHit,
   onEnemyHit,
 }: ProjectileProps) {
+  const boltRotation = useMemo(() => new THREE.Quaternion().setFromUnitVectors(
+    new THREE.Vector3(0, 1, 0), new THREE.Vector3(...projectile.direction).normalize(),
+  ), [projectile.direction]);
   const body = useRef<RapierRigidBody>(null);
   const age = useRef(0);
   const reflectedAge = useRef(0);
@@ -100,15 +107,15 @@ export function Projectile({
           }
         }}
       />
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
+      <mesh quaternion={boltRotation}>
         <capsuleGeometry args={[0.055, 0.42, 4, 8]} />
-        <meshBasicMaterial color={projectile.reflected ? "#63baff" : "#ff4a2e"} toneMapped={false} />
+        <meshBasicMaterial color={projectile.reflected ? coolCore : warmCore} toneMapped={false} />
       </mesh>
-      <pointLight
-        color={projectile.reflected ? "#168dff" : "#ff3d1d"}
-        intensity={4}
-        distance={2.5}
-      />
+      <mesh quaternion={boltRotation}>
+        <capsuleGeometry args={[0.12, 0.4, 4, 8]} />
+        <meshBasicMaterial color={projectile.reflected ? "#3fafff" : "#ff4624"}
+          transparent opacity={0.3} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+      </mesh>
     </RigidBody>
   );
 }

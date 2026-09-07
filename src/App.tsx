@@ -99,7 +99,7 @@ export function App() {
 
   const playSound = useCallback((cue: SoundCue) => audio.play(cue), [audio]);
   return (
-    <main className={`app-shell input-${inputMode}${touchMode && portrait ? " is-portrait" : ""}`}>
+    <main className={`app-shell ${screen === "title" ? "is-title" : "is-mission"} input-${inputMode}${touchMode && portrait ? " is-portrait" : ""}`}>
       <div className="orientation-blocker" role="dialog" aria-labelledby="orientation-title">
         <div className="mobile-emblem" aria-hidden="true">◈</div>
         <p className="eyebrow">ROTATION REQUIRED</p>
@@ -108,8 +108,6 @@ export function App() {
       </div>
 
       <div className="desktop-experience">
-        <div className="stars" aria-hidden="true" />
-        <div className="horizon" aria-hidden="true" />
         {(!touchMode || screen === "title") && (
           <FpsCounter onSample={performanceWarning.sample} />
         )}
@@ -126,17 +124,22 @@ export function App() {
 
         {webGlSupported && screen === "title" && (
           <section className="title-screen">
+            <header className="mission-masthead">
+              <span className="wordmark">STAR WARS</span>
+              <span className="masthead-rule" />
+              <span>THE CLONE WARS</span>
+            </header>
             <div className="title-copy">
-              <p className="eyebrow">A JEDI MISSION</p>
+              <p className="eyebrow"><span className="status-dot" /> OUTER RIM · SEPARATIST TERRITORY</p>
               <h1>
-                <span>STAR WARS</span>
-                Break the Signal
+                Break<br /><span className="title-second-line">the Signal</span>
               </h1>
               <p className="briefing">
-                A Separatist beacon is broadcasting Republic fleet positions.
-                As Anakin Skywalker, breach the outpost, destroy its droid
-                defenders, and silence the signal.
+                One transmission could turn the war.
+                Infiltrate the Separatist outpost as Anakin Skywalker
+                and silence the signal before it reaches the fleet.
               </p>
+              <div className="mission-chips"><span>ANAKIN SKYWALKER</span><span>SOLO MISSION</span></div>
               <div className="title-actions">
                 <button className="primary-action" onClick={startMission}>
                   Start Mission <span aria-hidden="true">→</span>
@@ -148,7 +151,7 @@ export function App() {
             </div>
 
             <aside className="controls-card desktop-controls-card" aria-label="Keyboard and mouse controls">
-              <p className="panel-label">CONTROLS</p>
+              <details><summary className="panel-label">FIELD CONTROLS <span>+</span></summary>
               <div className="control-grid">
                 {controls.map(([key, action]) => (
                   <div className="control-row" key={key}>
@@ -157,7 +160,7 @@ export function App() {
                   </div>
                 ))}
               </div>
-              <p className="controls-note">ESC to pause</p>
+              <p className="controls-note">ESC to pause</p></details>
             </aside>
             <aside className="controls-card touch-controls-card" aria-label="Touch controls">
               <p className="panel-label">TOUCH CONTROLS</p>
@@ -167,13 +170,14 @@ export function App() {
               </div>
               <p className="controls-note">Landscape play · Pause anytime</p>
             </aside>
+            <footer className="title-footer"><span><i /> REPUBLIC FIELD OPERATIONS</span><span>BREACH THE OUTPOST / DISABLE THE BEACON</span></footer>
           </section>
         )}
 
-        {(screen === "playing" || screen === "paused" || screen === "defeated") && (
+        {webGlSupported && (screen === "title" || screen === "playing" || screen === "paused" || screen === "defeated") && (
           <section
             className={`game-placeholder${screen === "playing" ? " is-playing" : ""}`}
-            aria-label="Mission in progress"
+            aria-label={screen === "title" ? "Outpost preview" : "Mission in progress"}
           >
             <Suspense fallback={<div className="mission-loading">INITIALIZING MISSION...</div>}>
               <GameScene
@@ -186,7 +190,10 @@ export function App() {
                 onPause={pause}
               />
             </Suspense>
+            {screen !== "title" && <>
+            <div className="scene-grade" aria-hidden="true" />
             <div className="combat-hud">
+              <div className="sector-label">OUTER RIM <span> // </span> SIGNAL OUTPOST</div>
               <div className="health-block">
                 <div className="health-header">
                   <span>ANAKIN</span>
@@ -230,6 +237,7 @@ export function App() {
               )}
             </div>
             <div className="reticle" aria-hidden="true" />
+            </>}
             {performanceWarning.visible && touchMode && (
               <div className="performance-warning" role="status">
                 <span>Performance is below 30 FPS. Closing other apps may help.</span>
