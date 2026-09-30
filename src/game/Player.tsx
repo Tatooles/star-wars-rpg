@@ -100,6 +100,7 @@ export function Player({
 
   useEffect(() => {
     if (playing) return;
+    moving.current = false;
     attackTime.current = 0;
     dodgeTime.current = 0;
     dodgeCooldown.current = 0;
@@ -214,7 +215,7 @@ export function Player({
     >
       <CapsuleCollider args={[0.62, 0.43]} position={[0, 0.12, 0]} />
       <group ref={model}>
-        <AnakinModel moving={moving} combatPose={pose} />
+        <AnakinModel moving={moving} combatPose={pose} playing={playing} />
       </group>
     </RigidBody>
   );

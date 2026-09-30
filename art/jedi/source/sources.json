@@ -1,0 +1,49 @@
+[
+  {
+    "filename": "mpfb.zip",
+    "url": "https://codeload.github.com/makehumancommunity/mpfb2/zip/refs/tags/v2.0.17",
+    "sha256": "d08e726c798fdc4eefb02b06b6c4efe37d40b5439777e53cf96dce0e5073297d",
+    "extract": "mpfb",
+    "include": [
+      "mpfb2-2.0.17/src/mpfb/"
+    ]
+  },
+  {
+    "filename": "hair.zip",
+    "url": "https://files2.makehumancommunity.org/asset_packs/hair01/hair01_cc0.zip",
+    "sha256": "49445d69848a313ec41a9970f6a0fe4bcf925c9f1c6ef40a76f119c2e07940c9",
+    "extract": "hair",
+    "include": [
+      "hair/cortu_short_messy_hair/"
+    ]
+  },
+  {
+    "filename": "skin.zip",
+    "url": "https://files2.makehumancommunity.org/asset_packs/skins02/skins02_cc0.zip",
+    "sha256": "1613f1ef3afca53094511d26620ed7cf1d2dedc29ed3d384d60bdebe250698ae",
+    "extract": "skin",
+    "include": [
+      "skins/toigo_light_skin_male_bronze/"
+    ]
+  },
+  {
+    "filename": "eyes/low-poly/low-poly.mhclo",
+    "url": "https://raw.githubusercontent.com/makehumancommunity/makehuman/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/makehuman/data/eyes/low-poly/low-poly.mhclo",
+    "sha256": "68582e28e9176cba7cfcf35208f671b6201b8d1bc95c32decff61a3160ec34d8"
+  },
+  {
+    "filename": "eyes/low-poly/low-poly.obj",
+    "url": "https://raw.githubusercontent.com/makehumancommunity/makehuman/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/makehuman/data/eyes/low-poly/low-poly.obj",
+    "sha256": "783fe1e6331162c876520b4c2bed7a8ca06354ca15497e8ebd68bb1b59f4d3de"
+  },
+  {
+    "filename": "eyes/materials/brown.mhmat",
+    "url": "https://raw.githubusercontent.com/makehumancommunity/makehuman/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/makehuman/data/eyes/materials/brown.mhmat",
+    "sha256": "4abad93ce50541c08127721e77bce035640c9f16bed16cd0f5524b1cd5908465"
+  },
+  {
+    "filename": "eyes/materials/brown_eye.png",
+    "url": "https://raw.githubusercontent.com/makehumancommunity/makehuman/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/makehuman/data/eyes/materials/brown_eye.png",
+    "sha256": "4659691c7295ad6206c78b003e5fd0e5f91dcd53032fa914a229bb48cabe424b"
+  }
+]

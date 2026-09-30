@@ -4,3 +4,6 @@ dist
 *.tsbuildinfo
 .vercel
 .env*
+.asset-cache/
+art/jedi/previews/
+*.blend1

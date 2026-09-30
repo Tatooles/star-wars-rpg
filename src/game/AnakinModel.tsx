@@ -1,117 +1,98 @@
-import { RefObject, useRef } from "react";
+import { useEffect, useMemo, useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
+import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import * as THREE from "three";
+import { JEDI_CLIPS, resolveJediClip, type CombatPose, type JediClip } from "./jediAnimation";
+
+export type { CombatPose } from "./jediAnimation";
+const MODEL_URL = "/models/dark-jedi.glb";
 
 type AnakinModelProps = {
   moving: RefObject<boolean>;
   combatPose: RefObject<CombatPose>;
+  playing: boolean;
 };
 
-export type CombatPose = {
-  attacking: boolean;
-  attackProgress: number;
-  comboStep: number;
-  blocking: boolean;
-  dodging: boolean;
-};
-
-const darkCloth = new THREE.MeshStandardMaterial({ color: "#151820", roughness: 0.86 });
-const leather = new THREE.MeshStandardMaterial({ color: "#2a211d", roughness: 0.7 });
-const skin = new THREE.MeshStandardMaterial({ color: "#c9906b", roughness: 0.75 });
-const hair = new THREE.MeshStandardMaterial({ color: "#3b271d", roughness: 0.9 });
-const saberCore = new THREE.MeshBasicMaterial({ color: "#dff7ff", toneMapped: false });
-const saberGlow = new THREE.MeshBasicMaterial({
-  color: "#42a8ff",
-  transparent: true,
-  opacity: 0.26,
-  blending: THREE.AdditiveBlending,
-  toneMapped: false,
-});
-const saberHilt = new THREE.MeshStandardMaterial({ color: "#a6afb7", metalness: 0.82, roughness: 0.25 });
-
-export function AnakinModel({ moving, combatPose }: AnakinModelProps) {
-  const leftLeg = useRef<THREE.Group>(null);
-  const rightLeg = useRef<THREE.Group>(null);
-  const rightArm = useRef<THREE.Group>(null);
-  const saber = useRef<THREE.Group>(null);
-  const body = useRef<THREE.Group>(null);
-
-  useFrame(({ clock }) => {
-    const stride = moving.current ? Math.sin(clock.elapsedTime * 9) * 0.42 : 0;
-    if (leftLeg.current) leftLeg.current.rotation.x = stride;
-    if (rightLeg.current) rightLeg.current.rotation.x = -stride;
-    const pose = combatPose.current;
-    if (rightArm.current) {
-      if (pose.blocking) {
-        rightArm.current.rotation.set(-1.25, 0.2, -0.55);
-      } else if (pose.attacking) {
-        const sweep = Math.sin(pose.attackProgress * Math.PI);
-        const direction = pose.comboStep === 1 ? 1 : -1;
-        rightArm.current.rotation.set(-0.6 - sweep * 1.1, direction * (0.3 + sweep * 0.8), -0.2);
-      } else {
-        rightArm.current.rotation.set(0, 0, 0.15);
+export function AnakinModel({ moving, combatPose, playing }: AnakinModelProps) {
+  const gltf = useGLTF(MODEL_URL);
+  const character = useMemo(() => {
+    const scene = clone(gltf.scene);
+    scene.traverse((object) => {
+      if (object instanceof THREE.Mesh) {
+        object.castShadow = true;
+        object.receiveShadow = true;
       }
+    });
+    const blade = scene.getObjectByName("SaberBladeCore");
+    let glow: THREE.SkinnedMesh | undefined;
+    let bladeMaterial: THREE.MeshBasicMaterial | undefined;
+    if (blade instanceof THREE.SkinnedMesh) {
+      bladeMaterial = new THREE.MeshBasicMaterial({ color: "#dff7ff", toneMapped: false });
+      blade.material = bladeMaterial;
+      blade.castShadow = false;
+      glow = blade.clone();
+      glow.name = "SaberGlow";
+      glow.geometry = blade.geometry.clone();
+      const positions = glow.geometry.getAttribute("position");
+      const normals = glow.geometry.getAttribute("normal");
+      for (let i = 0; i < positions.count; i++) {
+        positions.setXYZ(i, positions.getX(i) + normals.getX(i) * 0.018,
+          positions.getY(i) + normals.getY(i) * 0.018,
+          positions.getZ(i) + normals.getZ(i) * 0.018);
+      }
+      positions.needsUpdate = true;
+      glow.geometry.computeBoundingSphere();
+      glow.material = new THREE.MeshBasicMaterial({ color: "#279bff", transparent: true,
+        opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+      glow.castShadow = false;
+      glow.receiveShadow = false;
+      blade.parent?.add(glow);
     }
-    if (saber.current) saber.current.rotation.z = pose.comboStep === 2 ? 0.28 : -0.18;
-    if (body.current) body.current.rotation.z = pose.dodging ? -0.28 : 0;
+    const mixer = new THREE.AnimationMixer(scene);
+    const actions = new Map<JediClip, THREE.AnimationAction>();
+    for (const name of JEDI_CLIPS) {
+      const clip = gltf.animations.find((candidate) => candidate.name === name);
+      if (!clip) throw new Error(`Jedi asset is missing animation: ${name}`);
+      const action = mixer.clipAction(clip);
+      const oneShot = name.startsWith("Attack") || name === "Dodge";
+      action.setLoop(oneShot ? THREE.LoopOnce : THREE.LoopRepeat, oneShot ? 1 : Infinity);
+      action.clampWhenFinished = oneShot;
+      actions.set(name, action);
+    }
+    return { scene, mixer, actions, glow, bladeMaterial };
+  }, [gltf.scene, gltf.animations]);
+  const currentClip = useRef<JediClip | null>(null);
+
+  useEffect(() => {
+    currentClip.current = null;
+    return () => {
+      character.mixer.stopAllAction();
+      character.glow?.geometry.dispose();
+      if (character.glow?.material instanceof THREE.Material) character.glow.material.dispose();
+      character.bladeMaterial?.dispose();
+    };
+  }, [character]);
+
+  useFrame((_, delta) => {
+    if (!playing) return;
+    const pose = combatPose.current;
+    const name = resolveJediClip(moving.current, pose);
+    const action = character.actions.get(name)!;
+    if (currentClip.current !== name) {
+      const previous = currentClip.current ? character.actions.get(currentClip.current) : undefined;
+      action.reset().setEffectiveTimeScale(1).setEffectiveWeight(1).play();
+      if (previous) action.crossFadeFrom(previous, name.startsWith("Attack") ? 0.055 : 0.1, false);
+      currentClip.current = name;
+    }
+    // Sample attacks from the collision/hit-window clock, rather than a second animation timer.
+    action.paused = name.startsWith("Attack");
+    if (action.paused) action.time = THREE.MathUtils.clamp(pose.attackProgress, 0, 1) * action.getClip().duration;
+    character.mixer.update(Math.min(delta, 0.05));
+    if (import.meta.env.DEV) document.documentElement.dataset.jediAnimation = name;
   });
 
-  return (
-    <group ref={body} position={[0, -0.86, 0]}>
-      <group ref={leftLeg} position={[-0.22, 0.8, 0]}>
-        <mesh material={darkCloth} position={[0, -0.45, 0]} castShadow>
-          <capsuleGeometry args={[0.12, 0.65, 4, 8]} />
-        </mesh>
-        <mesh material={leather} position={[0, -0.94, 0.06]} castShadow>
-          <boxGeometry args={[0.3, 0.18, 0.56]} />
-        </mesh>
-      </group>
-      <group ref={rightLeg} position={[0.22, 0.8, 0]}>
-        <mesh material={darkCloth} position={[0, -0.45, 0]} castShadow>
-          <capsuleGeometry args={[0.12, 0.65, 4, 8]} />
-        </mesh>
-        <mesh material={leather} position={[0, -0.94, 0.06]} castShadow>
-          <boxGeometry args={[0.3, 0.18, 0.56]} />
-        </mesh>
-      </group>
-      <mesh material={darkCloth} position={[0, 1.25, 0]} castShadow>
-        <cylinderGeometry args={[0.34, 0.48, 1.12, 8]} />
-      </mesh>
-      <mesh material={leather} position={[0, 1.04, 0]} castShadow>
-        <boxGeometry args={[0.79, 0.16, 0.52]} />
-      </mesh>
-      <mesh material={darkCloth} position={[0, 1.08, 0.04]} rotation={[0.05, 0, 0]} castShadow>
-        <coneGeometry args={[0.68, 1.55, 5, 1, true]} />
-      </mesh>
-      <mesh material={skin} position={[0, 2.02, 0]} castShadow>
-        <sphereGeometry args={[0.27, 12, 8]} />
-      </mesh>
-      <mesh material={hair} position={[0, 2.14, -0.02]} scale={[1.08, 0.78, 1.05]} castShadow>
-        <sphereGeometry args={[0.29, 10, 7, 0, Math.PI * 2, 0, Math.PI * 0.74]} />
-      </mesh>
-      <mesh material={hair} position={[0, 1.96, -0.2]} scale={[1, 1.6, 0.7]} castShadow>
-        <sphereGeometry args={[0.25, 9, 6]} />
-      </mesh>
-      <mesh material={darkCloth} position={[-0.49, 1.3, 0]} rotation={[0, 0, -0.15]} castShadow>
-        <capsuleGeometry args={[0.1, 0.68, 4, 8]} />
-      </mesh>
-      <group ref={rightArm} position={[0.49, 1.62, 0]} rotation={[0, 0, 0.15]}>
-        <mesh material={darkCloth} position={[0, -0.32, 0]} castShadow>
-          <capsuleGeometry args={[0.1, 0.68, 4, 8]} />
-        </mesh>
-        <group ref={saber} position={[0, -0.82, 0.08]} rotation={[Math.PI / 2, 0, -0.18]}>
-          <mesh material={saberHilt}>
-            <cylinderGeometry args={[0.075, 0.09, 0.42, 10]} />
-          </mesh>
-          <mesh material={saberCore} position={[0, 1.23, 0]}>
-            <cylinderGeometry args={[0.037, 0.037, 2.25, 8]} />
-          </mesh>
-          <mesh material={saberGlow} position={[0, 1.23, 0]}>
-            <cylinderGeometry args={[0.095, 0.095, 2.3, 10]} />
-          </mesh>
-          <pointLight color="#238fff" intensity={5} distance={4} position={[0, 1.2, 0]} />
-        </group>
-      </group>
-    </group>
-  );
+  return <group position={[0, -0.87, 0]}><primitive object={character.scene} dispose={null} /></group>;
 }
+
+useGLTF.preload(MODEL_URL);
