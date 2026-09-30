@@ -438,6 +438,8 @@ export function GameScene({ playing, session, dispatch, onSound, mobile, onPause
           intensity={3.2}
           position={[14, 24, 10]}
           shadow-mapSize={mobile ? [1024, 1024] : [2048, 2048]}
+          shadow-normalBias={0.035}
+          shadow-bias={-0.0001}
           shadow-camera-left={-34}
           shadow-camera-right={34}
           shadow-camera-top={34}
