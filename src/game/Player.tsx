@@ -4,7 +4,7 @@ import {
   RapierRigidBody,
   RigidBody,
 } from "@react-three/rapier";
-import { RefObject, useCallback, useEffect, useRef } from "react";
+import { RefObject, Suspense, useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { AnakinModel, type CombatPose } from "./AnakinModel";
 import { PLAYER_TUNING } from "./combatTuning";
@@ -49,7 +49,7 @@ export function Player({
   onSound,
 }: PlayerProps) {
   const model = useRef<THREE.Group>(null);
-  const moving = useRef(false);
+  const locomotion = useRef(0);
   const lastAttackPress = useRef(0);
   const lastDodgePress = useRef(0);
   const targetRotation = useRef(Math.PI);
@@ -65,6 +65,7 @@ export function Player({
     comboStep: 0,
     blocking: false,
     dodging: false,
+    dodgeProgress: 0,
   });
   const reportedCombat = useRef<PlayerCombatState>({
     attacking: false,
@@ -129,7 +130,7 @@ export function Player({
       moveAxis: input.moveAxis,
     });
     const velocity = body.linvel();
-    moving.current = movement.speedMultiplier > 0;
+    locomotion.current = movement.speedMultiplier > 0 ? Math.sign(input.moveAxis) : 0;
     const movementLocked = performance.now() < controlLockUntilRef.current;
     targetRotation.current = movement.facingYaw;
 
@@ -191,6 +192,7 @@ export function Player({
     pose.current.comboStep = comboStep.current;
     pose.current.blocking = input.block && attackTime.current <= 0;
     pose.current.dodging = dodgeTime.current > 0;
+    pose.current.dodgeProgress = 1 - dodgeTime.current / PLAYER_TUNING.dodgeDuration;
     blockingRef.current = pose.current.blocking;
     reportCombatState({
       attacking: pose.current.attacking,
@@ -214,7 +216,9 @@ export function Player({
     >
       <CapsuleCollider args={[0.62, 0.43]} position={[0, 0.12, 0]} />
       <group ref={model}>
-        <AnakinModel moving={moving} combatPose={pose} />
+        <Suspense fallback={null}>
+          <AnakinModel locomotion={locomotion} combatPose={pose} />
+        </Suspense>
       </group>
     </RigidBody>
   );

@@ -1,9 +1,21 @@
-import { RefObject, useRef } from "react";
+import { RefObject, useEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
+import {
+  ANAKIN_CLIPS,
+  ATTACK_CLIPS,
+  dampWeights,
+  isLowerBodyTrack,
+  resolveLayerWeights,
+  resolveTargetWeights,
+  type AnakinClip,
+  type ClipWeights,
+} from "./anakinAnimationModel";
 
 type AnakinModelProps = {
-  moving: RefObject<boolean>;
+  /** 1 = moving forward, -1 = backpedaling, 0 = standing. */
+  locomotion: RefObject<number>;
   combatPose: RefObject<CombatPose>;
 };
 
@@ -13,105 +25,138 @@ export type CombatPose = {
   comboStep: number;
   blocking: boolean;
   dodging: boolean;
+  dodgeProgress: number;
 };
 
-const darkCloth = new THREE.MeshStandardMaterial({ color: "#151820", roughness: 0.86 });
-const leather = new THREE.MeshStandardMaterial({ color: "#2a211d", roughness: 0.7 });
-const skin = new THREE.MeshStandardMaterial({ color: "#c9906b", roughness: 0.75 });
-const hair = new THREE.MeshStandardMaterial({ color: "#3b271d", roughness: 0.9 });
-const saberCore = new THREE.MeshBasicMaterial({ color: "#dff7ff", toneMapped: false });
+// Built by art/blender/scripts/anakin_build.py.
+const MODEL_URL = `${import.meta.env.BASE_URL}models/anakin.glb`;
+// The Blender model is 1.86 m tall; the gameplay capsule expects ~2.45 units,
+// with its base 0.93 units below the rigid body origin.
+const MODEL_SCALE = 1.31;
+const MODEL_FLOOR = -0.93;
+const LOOP_SPEED: Partial<Record<AnakinClip, number>> = { Idle: 1, Run: 1.6, Backpedal: 2.1, Block: 1 };
+
+const saberCore = new THREE.MeshBasicMaterial({ color: "#e4f6ff", toneMapped: false });
 const saberGlow = new THREE.MeshBasicMaterial({
   color: "#42a8ff",
   transparent: true,
-  opacity: 0.26,
+  opacity: 0.3,
   blending: THREE.AdditiveBlending,
+  depthWrite: false,
   toneMapped: false,
 });
-const saberHilt = new THREE.MeshStandardMaterial({ color: "#a6afb7", metalness: 0.82, roughness: 0.25 });
 
-export function AnakinModel({ moving, combatPose }: AnakinModelProps) {
-  const leftLeg = useRef<THREE.Group>(null);
-  const rightLeg = useRef<THREE.Group>(null);
-  const rightArm = useRef<THREE.Group>(null);
-  const saber = useRef<THREE.Group>(null);
-  const body = useRef<THREE.Group>(null);
+type LayeredActions = Record<AnakinClip, { upper: THREE.AnimationAction; lower: THREE.AnimationAction }>;
 
-  useFrame(({ clock }) => {
-    const stride = moving.current ? Math.sin(clock.elapsedTime * 9) * 0.42 : 0;
-    if (leftLeg.current) leftLeg.current.rotation.x = stride;
-    if (rightLeg.current) rightLeg.current.rotation.x = -stride;
-    const pose = combatPose.current;
-    if (rightArm.current) {
-      if (pose.blocking) {
-        rightArm.current.rotation.set(-1.25, 0.2, -0.55);
-      } else if (pose.attacking) {
-        const sweep = Math.sin(pose.attackProgress * Math.PI);
-        const direction = pose.comboStep === 1 ? 1 : -1;
-        rightArm.current.rotation.set(-0.6 - sweep * 1.1, direction * (0.3 + sweep * 0.8), -0.2);
-      } else {
-        rightArm.current.rotation.set(0, 0, 0.15);
-      }
-    }
-    if (saber.current) saber.current.rotation.z = pose.comboStep === 2 ? 0.28 : -0.18;
-    if (body.current) body.current.rotation.z = pose.dodging ? -0.28 : 0;
+function prepareModel(scene: THREE.Object3D) {
+  if (scene.userData.anakinPrepared) return;
+  scene.userData.anakinPrepared = true;
+  scene.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    object.castShadow = true;
+    // Skinned bounds come from the bind pose; animated swings can leave them.
+    object.frustumCulled = false;
   });
 
-  return (
-    <group ref={body} position={[0, -0.86, 0]}>
-      <group ref={leftLeg} position={[-0.22, 0.8, 0]}>
-        <mesh material={darkCloth} position={[0, -0.45, 0]} castShadow>
-          <capsuleGeometry args={[0.12, 0.65, 4, 8]} />
-        </mesh>
-        <mesh material={leather} position={[0, -0.94, 0.06]} castShadow>
-          <boxGeometry args={[0.3, 0.18, 0.56]} />
-        </mesh>
-      </group>
-      <group ref={rightLeg} position={[0.22, 0.8, 0]}>
-        <mesh material={darkCloth} position={[0, -0.45, 0]} castShadow>
-          <capsuleGeometry args={[0.12, 0.65, 4, 8]} />
-        </mesh>
-        <mesh material={leather} position={[0, -0.94, 0.06]} castShadow>
-          <boxGeometry args={[0.3, 0.18, 0.56]} />
-        </mesh>
-      </group>
-      <mesh material={darkCloth} position={[0, 1.25, 0]} castShadow>
-        <cylinderGeometry args={[0.34, 0.48, 1.12, 8]} />
-      </mesh>
-      <mesh material={leather} position={[0, 1.04, 0]} castShadow>
-        <boxGeometry args={[0.79, 0.16, 0.52]} />
-      </mesh>
-      <mesh material={darkCloth} position={[0, 1.08, 0.04]} rotation={[0.05, 0, 0]} castShadow>
-        <coneGeometry args={[0.68, 1.55, 5, 1, true]} />
-      </mesh>
-      <mesh material={skin} position={[0, 2.02, 0]} castShadow>
-        <sphereGeometry args={[0.27, 12, 8]} />
-      </mesh>
-      <mesh material={hair} position={[0, 2.14, -0.02]} scale={[1.08, 0.78, 1.05]} castShadow>
-        <sphereGeometry args={[0.29, 10, 7, 0, Math.PI * 2, 0, Math.PI * 0.74]} />
-      </mesh>
-      <mesh material={hair} position={[0, 1.96, -0.2]} scale={[1, 1.6, 0.7]} castShadow>
-        <sphereGeometry args={[0.25, 9, 6]} />
-      </mesh>
-      <mesh material={darkCloth} position={[-0.49, 1.3, 0]} rotation={[0, 0, -0.15]} castShadow>
-        <capsuleGeometry args={[0.1, 0.68, 4, 8]} />
-      </mesh>
-      <group ref={rightArm} position={[0.49, 1.62, 0]} rotation={[0, 0, 0.15]}>
-        <mesh material={darkCloth} position={[0, -0.32, 0]} castShadow>
-          <capsuleGeometry args={[0.1, 0.68, 4, 8]} />
-        </mesh>
-        <group ref={saber} position={[0, -0.82, 0.08]} rotation={[Math.PI / 2, 0, -0.18]}>
-          <mesh material={saberHilt}>
-            <cylinderGeometry args={[0.075, 0.09, 0.42, 10]} />
-          </mesh>
-          <mesh material={saberCore} position={[0, 1.23, 0]}>
-            <cylinderGeometry args={[0.037, 0.037, 2.25, 8]} />
-          </mesh>
-          <mesh material={saberGlow} position={[0, 1.23, 0]}>
-            <cylinderGeometry args={[0.095, 0.095, 2.3, 10]} />
-          </mesh>
-          <pointLight color="#238fff" intensity={5} distance={4} position={[0, 1.2, 0]} />
-        </group>
-      </group>
-    </group>
-  );
+  const blade = scene.getObjectByName("SaberBlade");
+  if (!(blade instanceof THREE.Mesh)) return;
+  blade.material = saberCore;
+  blade.castShadow = false;
+  blade.geometry.computeBoundingBox();
+  const bounds = blade.geometry.boundingBox!;
+  const size = bounds.getSize(new THREE.Vector3());
+  const center = bounds.getCenter(new THREE.Vector3());
+  // Thicken the core a little and wrap it in an additive glow sleeve.
+  const axis = size.x > size.y && size.x > size.z ? "x" : size.y > size.z ? "y" : "z";
+  const length = size[axis];
+  blade.geometry.translate(-center.x, -center.y, -center.z);
+  blade.geometry.scale(axis === "x" ? 1 : 1.7, axis === "y" ? 1 : 1.7, axis === "z" ? 1 : 1.7);
+  blade.geometry.translate(center.x, center.y, center.z);
+  const glow = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, length * 1.03, 12, 1), saberGlow);
+  if (axis === "x") glow.rotation.z = Math.PI / 2;
+  if (axis === "z") glow.rotation.x = Math.PI / 2;
+  glow.position.copy(center);
+  blade.add(glow);
+  const light = new THREE.PointLight("#238fff", 2.2, 3.2);
+  light.position.copy(center);
+  blade.add(light);
 }
+
+function createLayeredActions(mixer: THREE.AnimationMixer, clips: THREE.AnimationClip[]) {
+  const actions = {} as LayeredActions;
+  for (const name of ANAKIN_CLIPS) {
+    const clip = clips.find((candidate) => candidate.name === name);
+    if (!clip) throw new Error(`anakin.glb is missing the ${name} animation`);
+    const layer = (lower: boolean) => {
+      const tracks = clip.tracks.filter((track) => isLowerBodyTrack(track.name) === lower);
+      const action = mixer.clipAction(new THREE.AnimationClip(`${name}.${lower ? "lower" : "upper"}`, clip.duration, tracks));
+      const driven = !(name in LOOP_SPEED);
+      action.setLoop(driven ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
+      action.clampWhenFinished = true;
+      action.paused = driven;
+      action.timeScale = LOOP_SPEED[name] ?? 1;
+      action.setEffectiveWeight(0);
+      action.play();
+      return action;
+    };
+    actions[name] = { upper: layer(false), lower: layer(true) };
+  }
+  return actions;
+}
+
+function seekClip(actions: LayeredActions, name: AnakinClip, progress: number) {
+  const { upper, lower } = actions[name];
+  const time = THREE.MathUtils.clamp(progress, 0, 1) * upper.getClip().duration * 0.999;
+  upper.time = time;
+  lower.time = time;
+}
+
+export function AnakinModel({ locomotion, combatPose }: AnakinModelProps) {
+  const { scene, animations } = useGLTF(MODEL_URL);
+  const blend = useRef<ClipWeights>(resolveTargetWeights({
+    locomotion: 0,
+    attacking: false,
+    comboStep: 0,
+    blocking: false,
+    dodging: false,
+  }));
+
+  const animation = useRef<{ mixer: THREE.AnimationMixer; actions: LayeredActions } | null>(null);
+
+  useEffect(() => {
+    prepareModel(scene);
+    const mixer = new THREE.AnimationMixer(scene);
+    animation.current = { mixer, actions: createLayeredActions(mixer, animations) };
+    return () => {
+      animation.current = null;
+      mixer.stopAllAction();
+      mixer.uncacheRoot(scene);
+    };
+  }, [animations, scene]);
+
+  useFrame((_, delta) => {
+    if (!animation.current) return;
+    const { mixer, actions } = animation.current;
+    const pose = combatPose.current;
+    const step = Math.min(delta, 0.1);
+    blend.current = dampWeights(
+      blend.current,
+      resolveTargetWeights({ ...pose, locomotion: locomotion.current }),
+      step,
+    );
+    const layers = resolveLayerWeights(blend.current);
+
+    // Progress-driven clips stay in lockstep with gameplay hit windows.
+    if (pose.attacking) seekClip(actions, ATTACK_CLIPS[pose.comboStep] ?? "Attack1", pose.attackProgress);
+    if (pose.dodging) seekClip(actions, "Dodge", pose.dodgeProgress);
+    for (const name of ANAKIN_CLIPS) {
+      actions[name].upper.setEffectiveWeight(layers.upper[name]);
+      actions[name].lower.setEffectiveWeight(layers.lower[name]);
+    }
+    mixer.update(step);
+  });
+
+  return <primitive object={scene} scale={MODEL_SCALE} position={[0, MODEL_FLOOR, 0]} />;
+}
+
+useGLTF.preload(MODEL_URL);
