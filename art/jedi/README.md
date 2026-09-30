@@ -5,7 +5,7 @@ Selected concept: `reference/dark-jedi.png` (full-body image 02). The charcoal w
 ## Deliverables
 
 - `dark-jedi.blend`: editable character, 53-bone game rig, seven actions, packed textures/reference, and studio review camera/lights. Open the Action Editor to select an action; Idle is the saved default.
-- `../../public/models/dark-jedi.glb`: self-contained runtime asset, 52,382 triangles, 12 skinned material meshes, approximately 3.9 MiB. The game adds a lightweight blue saber halo.
+- `../../public/models/dark-jedi.glb`: self-contained runtime asset, 53,222 triangles, 12 skinned material meshes, approximately 3.9 MiB. The game adds a lightweight blue saber halo.
 - Actions: Idle (2s), Run (0.467s), Attack1 (0.467s), Attack2 (0.5s), Attack3 (0.617s), Block (1.3s), Dodge (0.25s). All are in place. Root motion remains under the existing player controller; attack sampling follows gameplay progress rather than a separate timer.
 
 The model faces +Z in Three.js and stands approximately 2.3 world units high. The existing capsule collider remains the gameplay authority. Textures are embedded; upstream source caches and generated review renders are ignored by Git.

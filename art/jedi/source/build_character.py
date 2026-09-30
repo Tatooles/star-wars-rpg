@@ -180,7 +180,7 @@ def hand_weight(face, obj):
 trousers = subset(body, 'FittedTrousers', lambda p,o: .28 < center(p,o).z < .815, trouser_mat, .012)
 boots = subset(body, 'TallLeatherBoots', lambda p,o: .08 < center(p,o).z < .38, boot_mat, .011)
 # Replace the exposed source body's covered torso, feet, and legs with only skin that is actually visible.
-visible_skin = subset(body, 'FaceNeckAndHands', lambda p,o: all(o.data.vertices[i].co.z>1.325 for i in p.vertices) or all(o.data.vertices[i].co.z>1.23 and abs(o.data.vertices[i].co.x)<.09 for i in p.vertices) or hand_weight(p,o)>.1, skin)
+visible_skin = subset(body, 'FaceNeckAndHands', lambda p,o: center(p,o).z>1.325 or (center(p,o).z>1.235 and abs(center(p,o).x)<.095) or hand_weight(p,o)>.1, skin)
 bpy.data.objects.remove(body, do_unlink=True)
 body = visible_skin
 
@@ -285,12 +285,12 @@ for j in range(rings-1):
 skirt=finish_surface(mesh_object('SplitTunicHem',verts,faces,cloth),.004)
 
 # Tailored torso from a garment pattern, with no anatomical nipple or muscle impressions.
-vv=[]; ff=[]; sections=[(.765,.158,.117),(.83,.163,.124),(.94,.165,.126),(1.06,.19,.137),(1.16,.213,.139),(1.22,.23,.108),(1.265,.18,.075),(1.338,.074,.066)]
+vv=[]; ff=[]; sections=[(.765,.158,.117),(.83,.163,.124),(.94,.165,.126),(1.06,.19,.137),(1.16,.213,.139),(1.22,.23,.108),(1.265,.18,.13),(1.305,.135,.13),(1.338,.09,.10)]
 for j,(z,rx,ry) in enumerate(sections):
     for k in range(48):
         a=2*math.pi*k/48
         fold=.0025*math.sin(a*10+j*.45)
-        vv.append(((rx+fold)*math.sin(a),(ry+fold)*math.cos(a),z+(.088*min(0,math.cos(a)) if j==len(sections)-1 else 0)))
+        vv.append(((rx+fold)*math.sin(a),(ry+fold)*math.cos(a),z+(.055*min(0,math.cos(a)) if j==len(sections)-1 else 0)))
 for j in range(len(sections)-1):
     for k in range(48):
         a=j*48+k; ff.append((a,j*48+(k+1)%48,(j+1)*48+(k+1)%48,(j+1)*48+k))
@@ -320,7 +320,7 @@ for side in [-1,1]:
 for side in [-1,1]:
     vv=[]; ff=[]
     for j in range(12):
-        t=j/11; z=1.28-t*.37; cx=side*(.065-t*.105); y=-.082-.075*math.sin(t*math.pi*.75)
+        t=j/11; z=1.31-t*.4; cx=side*(.065-t*.105); y=-.108-.050*math.sin(t*math.pi*.75)
         for k in range(3): vv.append((cx+side*(k-1)*.018,y-.004,z))
     for j in range(11):
         for k in range(2): a=j*3+k; ff.append((a,a+1,a+4,a+3))
@@ -363,7 +363,7 @@ for side in ['l','r']:
     band('BootTopCuff_'+side,.375,.065,.058,.03,leather,'calf_'+side,sign*.144,-.031)
     band('BootStrap_'+side,.338,.062,.057,.022,boot_mat,'calf_'+side,sign*.148,-.027)
     cube('BootStrapBuckle_'+side,(sign*.207,-.027,.339),(.012,.03,.02),metal,'calf_'+side)
-    cube('BootSole_'+side,(sign*.174,-.085,.004),(.105,.239,.015),black_metal,'foot_'+side,.009)
+    cube('BootSole_'+side,(sign*.174,-.085,.008),(.105,.239,.03),black_metal,'foot_'+side,.009)
     # Smooth, shaped boot uppers cover the base mesh's anatomical toes.
     vv=[]; ff=[]; slices=[(.036,.028,.071),(.017,.047,.085),(-.03,.054,.106),(-.105,.058,.079),(-.18,.052,.058),(-.218,.024,.037)]
     for y,rx,top in slices:
