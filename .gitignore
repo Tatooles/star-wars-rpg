@@ -4,3 +4,5 @@ dist
 *.tsbuildinfo
 .vercel
 .env*
+*.blend1
+__pycache__/
