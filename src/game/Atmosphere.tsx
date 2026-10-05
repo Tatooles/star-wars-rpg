@@ -17,7 +17,7 @@ const dustPositions = (() => {
   return values;
 })();
 
-export function Atmosphere() {
+export function Atmosphere({ backdrop = true }: { backdrop?: boolean }) {
   const dust = useRef<THREE.Points>(null);
 
   useFrame((_, delta) => {
@@ -26,10 +26,12 @@ export function Atmosphere() {
 
   return (
     <group>
-      <mesh scale={120}>
-        <sphereGeometry args={[1, 24, 16]} />
-        <meshBasicMaterial color="#090d13" side={THREE.BackSide} fog={false} />
-      </mesh>
+      {backdrop && (
+        <mesh scale={120}>
+          <sphereGeometry args={[1, 24, 16]} />
+          <meshBasicMaterial color="#090d13" side={THREE.BackSide} fog={false} />
+        </mesh>
+      )}
       <points ref={dust}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[dustPositions, 3]} />

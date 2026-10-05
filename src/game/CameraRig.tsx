@@ -13,6 +13,8 @@ type CameraRigProps = {
   enabled: boolean;
   lockedTargetId: string | null;
   lockedTargetPositionRef: RefObject<THREE.Vector3 | null>;
+  distance?: number;
+  height?: number;
 };
 
 const CAMERA_PITCH = -0.2;
@@ -24,6 +26,8 @@ export function CameraRig({
   enabled,
   lockedTargetId,
   lockedTargetPositionRef,
+  distance = 7.2,
+  height = 1.1,
 }: CameraRigProps) {
   const { camera, scene } = useThree();
   const currentPosition = useRef(new THREE.Vector3(2.4, 4.5, 25));
@@ -60,11 +64,10 @@ export function CameraRig({
       yawRef.current += yawDifference * Math.min(1, delta * 5.5);
       target.lerp(new THREE.Vector3(lockPosition.x, lockPosition.y + 0.6, lockPosition.z), 0.24);
     }
-    const distance = 7.2;
     const flatDistance = Math.cos(CAMERA_PITCH) * distance;
     const desired = new THREE.Vector3(
       target.x - Math.sin(yawRef.current) * flatDistance + Math.cos(yawRef.current) * 1.15,
-      target.y + 1.1 - Math.sin(CAMERA_PITCH) * distance,
+      target.y + height - Math.sin(CAMERA_PITCH) * distance,
       target.z - Math.cos(yawRef.current) * flatDistance - Math.sin(yawRef.current) * 1.15,
     );
 

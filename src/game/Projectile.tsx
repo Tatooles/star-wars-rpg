@@ -102,7 +102,7 @@ export function Projectile({
       />
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <capsuleGeometry args={[0.055, 0.42, 4, 8]} />
-        <meshBasicMaterial color={projectile.reflected ? "#63baff" : "#ff4a2e"} toneMapped={false} />
+        <meshBasicMaterial color={projectile.reflected ? "#63baff" : "#ff4a2e"} toneMapped={false} userData={{ glow: true }} />
       </mesh>
       <pointLight
         color={projectile.reflected ? "#168dff" : "#ff3d1d"}

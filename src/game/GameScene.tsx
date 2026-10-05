@@ -6,6 +6,7 @@ import {
   RefObject,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -24,6 +25,8 @@ import { useControls, type Controls } from "./useControls";
 import type { SoundCue } from "./audio";
 import { B2_TUNING, PLAYER_TUNING } from "./combatTuning";
 import { MobileControls } from "./MobileControls";
+import { LookDirector } from "./LookDirector";
+import { resolveLook } from "./visualStyle";
 
 type GameSceneProps = {
   playing: boolean;
@@ -264,6 +267,8 @@ function EncounterGate({ z }: { z: number }) {
 }
 
 export function GameScene({ playing, session, dispatch, onSound, mobile, onPause }: GameSceneProps) {
+  // Style test: ?look=clone-wars | cel | atmospheric (default keeps the current look).
+  const look = useMemo(() => resolveLook(window.location.search), []);
   const playerRef = useRef<RapierRigidBody>(null);
   const enemyBodies = useRef(new Map<string, RapierRigidBody>());
   const enemyPositions = useRef(new Map<string, THREE.Vector3>());
@@ -418,8 +423,8 @@ export function GameScene({ playing, session, dispatch, onSound, mobile, onPause
     <>
       <div className="canvas-input-surface">
         <Canvas
-        shadows="basic"
-        camera={{ fov: 54, near: 0.08, far: 180, position: [2.4, 4.5, 25] }}
+        shadows={look.softShadows ? "percentage" : "basic"}
+        camera={{ fov: look.camera.fov, near: 0.08, far: 180, position: [2.4, 4.5, 25] }}
         dpr={mobile ? [1, 1.25] : [1, 1.7]}
         gl={{ antialias: !mobile, powerPreference: "high-performance" }}
         onCreated={({ gl, scene }) => {
@@ -428,15 +433,19 @@ export function GameScene({ playing, session, dispatch, onSound, mobile, onPause
           gl.toneMappingExposure = 1.08;
         }}
       >
-        <color attach="background" args={["#141719"]} />
-        <fog attach="fog" args={["#292723", 30, 100]} />
-        <Atmosphere />
-        <hemisphereLight args={["#9eb7c8", "#3b251a", 1.8]} />
+        <color attach="background" args={[look.background]} />
+        <fog attach="fog" args={[look.fog.color, look.fog.near, look.fog.far]} />
+        <Atmosphere backdrop={!look.sky} />
+        <LookDirector look={look} mobile={mobile} />
+        <hemisphereLight args={[look.hemisphere.sky, look.hemisphere.ground, look.hemisphere.intensity]} />
         <directionalLight
           castShadow
-          color="#ffe2bd"
-          intensity={3.2}
-          position={[14, 24, 10]}
+          color={look.sun.color}
+          intensity={look.sun.intensity}
+          position={look.sun.position}
+          shadow-bias={look.shadow.bias}
+          shadow-normalBias={look.shadow.normalBias}
+          shadow-radius={look.shadow.radius}
           shadow-mapSize={mobile ? [1024, 1024] : [2048, 2048]}
           shadow-camera-left={-34}
           shadow-camera-right={34}
@@ -551,6 +560,8 @@ export function GameScene({ playing, session, dispatch, onSound, mobile, onPause
           enabled={playing}
           lockedTargetId={session.lockedTargetId}
           lockedTargetPositionRef={lockedTargetPositionRef}
+          distance={look.camera.distance}
+          height={look.camera.height}
         />
         </Canvas>
       </div>

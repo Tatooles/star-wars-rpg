@@ -37,6 +37,7 @@ const MODEL_FLOOR = -0.93;
 const LOOP_SPEED: Partial<Record<AnakinClip, number>> = { Idle: 1, Run: 1.6, Backpedal: 2.1, Block: 1 };
 
 const saberCore = new THREE.MeshBasicMaterial({ color: "#e4f6ff", toneMapped: false });
+saberCore.userData.glow = true;
 const saberGlow = new THREE.MeshBasicMaterial({
   color: "#42a8ff",
   transparent: true,

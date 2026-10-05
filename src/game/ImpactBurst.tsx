@@ -40,7 +40,7 @@ export function ImpactBurst({ position, destructive, onComplete }: ImpactBurstPr
           rotation={[index * 0.7, index * 1.3, index * 0.4]}
         >
           <tetrahedronGeometry args={[destructive ? 0.18 : 0.11, 0]} />
-          <meshBasicMaterial color={index % 2 === 0 ? "#ff7a35" : "#8ad8ff"} transparent toneMapped={false} />
+          <meshBasicMaterial color={index % 2 === 0 ? "#ff7a35" : "#8ad8ff"} transparent toneMapped={false} userData={{ glow: true }} />
         </mesh>
       ))}
     </group>

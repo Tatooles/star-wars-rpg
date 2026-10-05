@@ -34,7 +34,7 @@ export function Beacon({ disabled }: BeaconProps) {
       </group>
       <mesh ref={beam} position={[0, 10, 0]}>
         <cylinderGeometry args={[0.28, 0.65, 19, 10, 1, true]} />
-        <meshBasicMaterial color={disabled ? "#697078" : "#e8472d"} transparent opacity={0.25} toneMapped={false} />
+        <meshBasicMaterial color={disabled ? "#697078" : "#e8472d"} transparent opacity={0.25} toneMapped={false} userData={{ glow: true }} />
       </mesh>
       <pointLight color={disabled ? "#62707a" : "#ff482f"} intensity={disabled ? 1 : 18} distance={18} position={[0, 3, 0]} />
     </group>
