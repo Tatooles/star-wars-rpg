@@ -4,7 +4,7 @@ import {
   RapierRigidBody,
   RigidBody,
 } from "@react-three/rapier";
-import { RefObject, Suspense, useCallback, useEffect, useRef } from "react";
+import { RefObject, useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { AnakinModel, type CombatPose } from "./AnakinModel";
 import { PLAYER_TUNING } from "./combatTuning";
@@ -216,9 +216,8 @@ export function Player({
     >
       <CapsuleCollider args={[0.62, 0.43]} position={[0, 0.12, 0]} />
       <group ref={model}>
-        <Suspense fallback={null}>
-          <AnakinModel locomotion={locomotion} combatPose={pose} />
-        </Suspense>
+        {/* Suspends up to the mission loading screen until the GLB is ready. */}
+        <AnakinModel locomotion={locomotion} combatPose={pose} />
       </group>
     </RigidBody>
   );
