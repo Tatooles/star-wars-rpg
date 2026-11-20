@@ -4,3 +4,7 @@ dist
 *.tsbuildinfo
 .vercel
 .env*
+*.pem
+*.key
+*.p12
+*.pfx
